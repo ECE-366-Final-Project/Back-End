@@ -6,4 +6,4 @@
 > mvn package
 
 > Run with:     <br>
-> java -cp target/Project-a0.1.jar
+> java -cp target/Project-a0.1.jar local.Main
