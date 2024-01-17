@@ -3,6 +3,8 @@ package main.java.local.Casino;
 import java.util.Set;
 import java.util.HashSet;
 
+import java.util.HashMap;
+
 public class Casino {
 
     private Account[] accounts;
@@ -10,11 +12,13 @@ public class Casino {
     private int maxAccounts;
     private int nextID = 0;
     private Set<String> usernames;
+    private HashMap<String, Integer> userIndex;
 
     public Casino(int maxAccounts){
         accounts = new Account[maxAccounts];
         this.maxAccounts = maxAccounts;
         usernames = new HashSet<String>();
+        userIndex = new HashMap<String, Integer>();
     }
 
     // TODO
@@ -36,12 +40,21 @@ public class Casino {
         if (!isValidUsername(username)) {
             return 2;
         }
-        accounts[numAccounts++] = new Account(getNextID(), username);
+        accounts[numAccounts] = new Account(getNextID(), username);
+        userIndex.put(username, numAccounts);
+        numAccounts++;
         return 0;
     }
 
     public int getNextID() {
         nextID++;
         return nextID-1;
+    }
+
+    public Account getAccount(String username) {
+        if (usernames.contains(username)) {  
+            return accounts[userIndex.get(username)];
+        }
+        return null;
     }
 }
