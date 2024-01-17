@@ -4,7 +4,7 @@
 // And run with:
 // java Main
 
-class Main {
+public class Main {
 
     public static void main(String[] args) {
 
