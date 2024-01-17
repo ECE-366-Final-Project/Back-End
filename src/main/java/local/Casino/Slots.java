@@ -8,6 +8,7 @@ import java.util.Random;
 public class Slots {
 
     public enum Symbols {
+
         DIAMOND,
         LEMON,
         WATERMELON,
@@ -30,4 +31,5 @@ public class Slots {
         }
 
     }
+    
 }
