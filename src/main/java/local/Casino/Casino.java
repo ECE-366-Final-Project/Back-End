@@ -1,4 +1,4 @@
-package Casino;
+package main.java.local.Casino;
 
 import java.util.Set;
 import java.util.HashSet;

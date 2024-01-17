@@ -1,4 +1,4 @@
-package Casino;
+package main.java.local.Casino;
 
 public class Account {
     

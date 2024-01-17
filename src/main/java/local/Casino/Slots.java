@@ -1,4 +1,4 @@
-package Casino;
+package main.java.local.Casino;
 
 import java.util.Arrays;
 import java.util.Collections;
