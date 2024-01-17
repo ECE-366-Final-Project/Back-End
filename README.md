@@ -6,4 +6,6 @@
 > mvn package
 
 > Run with:     <br>
+> java -jar target/Project-<version_no>     <br>
+> or with:      <br>
 > java -cp target/Project-a0.1.jar local.Main
