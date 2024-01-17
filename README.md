@@ -2,8 +2,8 @@
 ### Cooper Union, Spring 2024
 > #### Lani Wang, James Ryan, Evan Rosenfeld, Vaibhav Hariani
 
-> Build with:
+> Build with:   <br>
 > mvn package
 
-> Run with:
-> java -cp [Title](target/Project-a0.1.jar)
+> Run with:     <br>
+> java -cp target/Project-a0.1.jar
