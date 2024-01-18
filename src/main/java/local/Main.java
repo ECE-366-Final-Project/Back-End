@@ -2,6 +2,7 @@ package main.java.local;
 
 import main.java.local.Casino.Casino;
 import main.java.local.Casino.Account;
+import main.java.local.Casino.Slots;
 
 public class Main {
 
@@ -27,5 +28,5 @@ public class Main {
       }
 
     }
-    
+
 }
