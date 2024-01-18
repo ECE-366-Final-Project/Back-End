@@ -2,7 +2,7 @@ package main.java.local.Casino;
 
 public class Account {
     
-    private int balance = 0;
+    private double balance = 0.0;
     private String username;
     private final int ID;
 
@@ -11,7 +11,7 @@ public class Account {
         this.username = username;
     }
 
-    public int getBalance() {
+    public double getBalance() {
         return balance;
     }
 
@@ -23,12 +23,12 @@ public class Account {
         return ID;
     }
 
-    public int increaseBalance(int inc) {
+    public double increaseBalance(double inc) {
         balance += inc;
         return balance;
     }
 
-    public int decreaseBalance(int dec) {
+    public double decreaseBalance(double dec) {
         balance -= dec;
         return balance;
     } 

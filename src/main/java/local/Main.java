@@ -8,37 +8,37 @@ public class Main {
 
     public static void main(String[] args) {
 
-      Casino house = new Casino(10);
-      house.createAccount("Evan R");
-  
-      Account evan = house.getAccount("Evan R");
+        Casino house = new Casino(10);
+        house.createAccount("Evan R");
 
-      if (evan != null) {
+        Account evan = house.getAccount("Evan R");
 
-          evan.increaseBalance(1000);
-          System.out.println("Balance: " + evan.getBalance());
-          
-      } else {
-          System.out.println("NULL");
-      }
+        if (evan != null) {
 
-      Slots.Symbol[] rolls = Slots.playSlots();
+        evan.increaseBalance(1000.0);
+        System.out.printf("Balance: %.2f\n", evan.getBalance());
+            
+        } else {
+            System.out.println("NULL");
+        }
 
-      for (int i = 0; i < rolls.length; i++) {
-          System.out.printf("Roll #%d: %s\n", i+1, rolls[i]);
-      }
-      
-      int bet = 100;
+        Slots.Symbol[] rolls = Slots.playSlots();
 
-      evan.decreaseBalance(bet);
+        for (int i = 0; i < Slots.NUMBER_OF_ROLLS; i++) {
+            System.out.printf("Roll #%d: %s\n", i+1, rolls[i]);
+        }
+        
+        double bet = 100.0;
 
-      int winnings = Slots.getWinnings(rolls, 100);
+        evan.decreaseBalance(bet);
 
-      System.out.println("Winnings: " + winnings);
+        double winnings = Slots.getWinnings(rolls, bet);
 
-      evan.increaseBalance(Slots.getWinnings(rolls, 100));
+        System.out.printf("Winnings: %.2f\n", winnings);
 
-      System.out.println("Balance: " + evan.getBalance());
+        evan.increaseBalance(winnings);
+
+        System.out.printf("Balance: %.2f\n", evan.getBalance());
 
     }
 
