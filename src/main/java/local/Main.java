@@ -15,7 +15,6 @@ public class Main {
 
       if (evan != null) {
 
-          System.out.println(evan.getBalance());
           evan.increaseBalance(100);
           System.out.println(evan.getBalance());
           
@@ -23,9 +22,13 @@ public class Main {
           System.out.println("NULL");
       }
 
+      Slots.Symbol[] rolls = Slots.playSlots();
+
       for (int i = 0; i < 3; i++) {
-          System.out.println(Slots.Symbols.randomLetter());
+          System.out.println(rolls[i]);
       }
+      
+      System.out.println(Slots.getWinnings(rolls, 100));
 
     }
 
