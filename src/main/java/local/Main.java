@@ -15,8 +15,8 @@ public class Main {
 
       if (evan != null) {
 
-          evan.increaseBalance(100);
-          System.out.println(evan.getBalance());
+          evan.increaseBalance(1000);
+          System.out.println("Balance: " + evan.getBalance());
           
       } else {
           System.out.println("NULL");
@@ -25,10 +25,20 @@ public class Main {
       Slots.Symbol[] rolls = Slots.playSlots();
 
       for (int i = 0; i < 3; i++) {
-          System.out.println(rolls[i]);
+          System.out.printf("Roll #%d: %s\n", i+1, rolls[i]);
       }
       
-      System.out.println(Slots.getWinnings(rolls, 100));
+      int bet = 100;
+
+      evan.decreaseBalance(bet);
+
+      int winnings = Slots.getWinnings(rolls, 100);
+
+      System.out.println("Winnings: " + winnings);
+
+      evan.increaseBalance(Slots.getWinnings(rolls, 100));
+
+      System.out.println("Balance: " + evan.getBalance());
 
     }
 
