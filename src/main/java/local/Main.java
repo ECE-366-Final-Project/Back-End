@@ -24,7 +24,7 @@ public class Main {
 
       Slots.Symbol[] rolls = Slots.playSlots();
 
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < rolls.length; i++) {
           System.out.printf("Roll #%d: %s\n", i+1, rolls[i]);
       }
       
