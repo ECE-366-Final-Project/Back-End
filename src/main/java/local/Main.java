@@ -4,9 +4,14 @@ import main.java.local.Casino.Casino;
 import main.java.local.Casino.Account;
 import main.java.local.Casino.Slots.Slots;
 
+import main.java.local.Casino.CardGames.Card;
+import main.java.local.Casino.CardGames.Deck;
+
 public class Main {
 
     public static void main(String[] args) {
+
+        // TESTING SLOTS
 
         Casino house = new Casino(10);
         house.createAccount("Evan R");
@@ -39,6 +44,31 @@ public class Main {
         evan.increaseBalance(winnings);
 
         System.out.printf("Balance: %.2f\n", evan.getBalance());
+
+
+
+
+        // TESTING BLACKJACK
+
+        Deck myDeck = new Deck();
+        System.out.println("NEW DECK:");
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
+
+        myDeck.shuffle();
+
+        System.out.println("SHUFFLED DECK:");
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
+
+        myDeck.resetDeck();
+
+        System.out.println("RESET DECK:");
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
+        System.out.println(myDeck.deal().toString());
 
     }
 

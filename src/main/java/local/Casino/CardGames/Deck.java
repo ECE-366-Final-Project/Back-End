@@ -17,7 +17,8 @@ public class Deck {
         int pos = 0;
         for (int s = 0; s < Card.Suit.SUITS.length; s++) {
             for (int v = 0; v < Card.Value.VALUES.length; v++) {
-                mainDeck[pos++] = new Card(Card.Value.VALUES[s], Card.Suit.SUITS[v]);
+                mainDeck[pos] = new Card(Card.Value.VALUES[v], Card.Suit.SUITS[s]);
+                pos++;
             }
         }
     }
@@ -25,8 +26,8 @@ public class Deck {
     public void shuffle() {
         // https://www.digitalocean.com/community/tutorials/shuffle-array-java
         Random rand = new Random();
-		for (int i = 0; i < mainDeck.length; i++) {
-			int randomIndexToSwap = rand.nextInt(mainDeck.length);
+		for (int i = 0; i < numCards; i++) {
+			int randomIndexToSwap = rand.nextInt(numCards);
 			Card temp = mainDeck[randomIndexToSwap];
 			mainDeck[randomIndexToSwap] = mainDeck[i];
 			mainDeck[i] = temp;
