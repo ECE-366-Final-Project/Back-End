@@ -1,11 +1,13 @@
-package main.java.local.Casino.Blackjack;
+package main.java.local.Casino.CardGames.Blackjack;
 
-import main.java.local.Casino.Blackjack.Card;
-import main.java.local.Casino.Blackjack.Deck;
+import main.java.local.Casino.CardGames.Card;
+import main.java.local.Casino.CardGames.Deck;
 
-int DEALER_MIN_STAND = 18;
+import main.java.local.Casino.Account;
 
 public class Blackjack {
+
+    int DEALER_MIN_STAND = 18;
 
     Account player;
     Deck deck;
