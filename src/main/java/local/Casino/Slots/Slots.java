@@ -10,9 +10,6 @@ import java.util.HashSet;
 public class Slots {
 
     final public static int NUMBER_OF_ROLLS = 3; // 3 rolls
-    final private static double TRIPLE_PAYOUT = 3.0; // 3x bet (temporary amount)
-    final private static double JACKPOT_PAYOUT = 10.0; // 10x bet (temporary amount)
-    final private static double PER_DUPLICATE_PAYOUT = 1.25; // 1.5*number of duplicate symbols * bet (temporary amount)
 
     public enum Symbol {
 
@@ -57,6 +54,11 @@ public class Slots {
     public static double getWinnings(Symbol[] rolls, double bet) {
         return bet*getPayout(rolls);
     }
+
+    // PAYOUTS
+    final private static double TRIPLE_PAYOUT = 3.0; // 3x bet (temporary amount)
+    final private static double JACKPOT_PAYOUT = 10.0; // 10x bet (temporary amount)
+    final private static double PER_DUPLICATE_PAYOUT = 1.25; // 1.5*number of duplicate symbols * bet (temporary amount)
 
     private static double getPayout(Symbol[] rolls) {
         if (allSymbolsMatch(rolls)) {
