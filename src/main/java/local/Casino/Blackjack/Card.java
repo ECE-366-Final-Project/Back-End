@@ -7,6 +7,8 @@ public class Card {
         SPADES,
         DIAMONDS,
         CLUBS;
+
+        private static final List<Symbol> SUITS = Collections.unmodifiableList(Arrays.asList(values()));
     }
 
     enum Value {
@@ -24,6 +26,8 @@ public class Card {
         QUEEN
         KING
         ACE;
+
+        private static final List<Symbol> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
     }
 
     public final Value cardValue;

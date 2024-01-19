@@ -27,12 +27,12 @@ public class Slots {
         JACKPOT;
 
         // https://stackoverflow.com/a/1972399
-        private static final List<Symbol> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
-        private static final int SIZE = VALUES.size();
+        private static final List<Symbol> SYMBOLS = Collections.unmodifiableList(Arrays.asList(values()));
+        private static final int SIZE = SYMBOLS.size();
         private static final Random RANDOM = new Random();
 
         public static Symbol randomSymbol()  {
-            return VALUES.get(RANDOM.nextInt(SIZE));
+            return SYMBOLS.get(RANDOM.nextInt(SIZE));
         }
 
     }
