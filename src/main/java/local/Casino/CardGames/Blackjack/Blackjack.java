@@ -5,6 +5,8 @@ import main.java.local.Casino.CardGames.Deck;
 
 import main.java.local.Casino.Account;
 
+import java.util.Scanner; 
+
 public class Blackjack {
 
     private static final int MAX_PLAYER_COUNT = 6;
@@ -26,9 +28,37 @@ public class Blackjack {
         this.players = players;
         deck = new Deck();
         deck.shuffle();
-
-
     }
 
+    // Black-Box function (will get input from buttons most likely)
+    private enum Decision {
+        HIT,
+        STAND,
+        DOUBLE,
+        SPLIT,
+        SURRENDER;
+    }
+    private Decision hitOrStand() {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print("Decision: ");  
+            String decision = scanner.next();
+
+            switch (decision) {
+                case "Hit":
+                    return Decision.HIT;
+                case "Stand":
+                    return Decision.STAND;
+                case "Double":
+                    return Decision.DOUBLE;
+                case "Split":
+                    return Decision.SPLIT;
+                case "Surrender":
+                    return Decision.SURRENDER;
+                default:
+                    break;
+            }
+        }
+    }
 
 }
