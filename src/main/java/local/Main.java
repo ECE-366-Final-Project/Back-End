@@ -1,7 +1,7 @@
 package main.java.local;
 
 import main.java.local.Casino.Casino;
-import main.java.local.Casino.Account;
+import main.java.local.Casino.Account.Account;
 import main.java.local.Casino.Slots.Slots;
 
 import main.java.local.Casino.CardGames.Card;

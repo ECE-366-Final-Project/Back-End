@@ -3,7 +3,7 @@ package main.java.local.Casino.CardGames.Blackjack;
 import main.java.local.Casino.CardGames.Card;
 import main.java.local.Casino.CardGames.Deck;
 
-import main.java.local.Casino.Account;
+import main.java.local.Casino.Account.Account;
 
 import java.util.Scanner; 
 

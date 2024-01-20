@@ -1,4 +1,8 @@
-package main.java.local.Casino;
+package main.java.local.Casino.Account;
+
+import main.java.local.Casino.Account.Transaction;
+
+import java.util.ArrayList;
 
 public class Account {
     
@@ -6,9 +10,12 @@ public class Account {
     private String username;
     private final int ID;
 
+    private ArrayList<Transaction> transactionHistory;
+
     public Account(int ID, String username) {
         this.ID = ID;
         this.username = username;
+        transactionHistory = new ArrayList<Transaction>();
     }
 
     public double getBalance() {
