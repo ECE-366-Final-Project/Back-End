@@ -1,19 +1,19 @@
 package main.java.local.Casino.Account.Transaction;
 
-enum TransactionType {
-    DEPOSIT,
-    WITHDRAWL,
-    PAYMENT;
-}
+import main.java.local.Casino.Account.Account;
 
-public class Transaction {
+public abstract class Transaction {
 
-    public final Account sender;
+    protected enum TransactionType {
+        DEPOSIT, // receiver
+        WITHDRAWL, // sender
+        PAYMENT; // sender -> receiver
+    }
 
-    public final int amountSent;
+    protected TransactionType type;
+    protected int amountSent;
 
-    public Transaction(int amountSent, Account sender) {
-        this.sender = sender;
+    public Transaction (int amountSent) {
         this.amountSent = amountSent;
     }
 

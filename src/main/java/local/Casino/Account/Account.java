@@ -1,6 +1,6 @@
 package main.java.local.Casino.Account;
 
-import main.java.local.Casino.Account.Transaction;
+import main.java.local.Casino.Account.Transaction.Transaction;
 
 import java.util.ArrayList;
 
@@ -40,4 +40,8 @@ public class Account {
         return balance;
     } 
     
+    public void addTransaction(Transaction transaction) {
+        transactionHistory.add(transaction);
+    }
+
 }
