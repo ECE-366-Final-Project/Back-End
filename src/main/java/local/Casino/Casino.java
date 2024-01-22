@@ -51,7 +51,7 @@ public class Casino {
         return 0;
     }
 
-    public int getNextID() {
+    private int getNextID() {
         nextID++;
         return nextID-1;
     }
