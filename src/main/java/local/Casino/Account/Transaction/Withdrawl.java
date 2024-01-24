@@ -1,6 +1,6 @@
-package main.java.local.Casino.Account.Transaction;
+package local.Casino.Account.Transaction;
 
-import main.java.local.Casino.Account.Account;
+import local.Casino.Account.Account;
 
 public class Withdrawl extends Transaction {
 

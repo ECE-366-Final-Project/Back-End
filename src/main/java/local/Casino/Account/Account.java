@@ -1,6 +1,6 @@
-package main.java.local.Casino.Account;
+package local.Casino.Account;
 
-import main.java.local.Casino.Account.Transaction.Transaction;
+import local.Casino.Account.Transaction.Transaction;
 
 import java.util.ArrayList;
 
