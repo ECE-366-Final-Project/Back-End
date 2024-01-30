@@ -9,9 +9,11 @@ package manager.
 For OSX: `$ brew install maven`             <br>
 For Ubuntu: `# apt install maven`           <br>
 Build with (from Back-End/ directory):      <br>
-> mvn package
+```
+mvn package
+```
 
 Run with (from Project/ directory):         <br>
-> java -jar target/Project-<version_no>     <br>
-or with (from Project/ directory):          <br>
-> java -cp target/Project-a0.1.jar main.java.local.Main
+```
+java -jar target/Project-<version_no>     
+``` 
