@@ -9,8 +9,8 @@
   <version>a0.1</version>
 
   <name>Project</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://ee.cooper.edu/~evan.rosenfeld</url>
+  
+  <url>https://github.com/ECE-366-Final-Project/Project</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -69,22 +69,22 @@
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
-		<plugin>
+        <plugin>
           <!-- Build an executable JAR -->
-		  <groupId>org.apache.maven.plugins</groupId>
-		  <artifactId>maven-jar-plugin</artifactId>
-		  <version>3.1.0</version>
-		  <configuration>
-		    <archive>
-			  <manifest>
-			    <addClasspath>true</addClasspath>
-				<classpathPrefix>src/main/java/local/</classpathPrefix>
-				<mainClass>main.java.local.Main</mainClass>
-			  </manifest>
-			</archive>
-		  </configuration>
-		</plugin>
-	  </plugins>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.1.0</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addClasspath>true</addClasspath>
+                <classpathPrefix>src/main/java/local/</classpathPrefix>
+                <mainClass>local.Main</mainClass>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
     </pluginManagement>
   </build>
 </project>

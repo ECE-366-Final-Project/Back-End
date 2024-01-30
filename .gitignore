@@ -25,3 +25,10 @@ replay_pid*
 
 # ignore build files and target
 target/
+.idea/vcs.xml
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/jarRepositories.xml
+.idea/misc.xml
+.idea/remote-targets.xml
+.idea/uiDesigner.xml

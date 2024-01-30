@@ -1,4 +1,8 @@
-package main.java.local.Casino;
+package local.Casino;
+
+import local.Casino.Slots.Slots;
+
+import local.Casino.Account.Account;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -11,7 +15,7 @@ public class Casino {
     private int numAccounts = 0;
     private int maxAccounts;
     private int nextID = 0;
-    private Set<String> usernames;
+    private HashSet<String> usernames;
     private HashMap<String, Integer> userIndex;
 
     public Casino(int maxAccounts){
@@ -41,12 +45,13 @@ public class Casino {
             return 2;
         }
         accounts[numAccounts] = new Account(getNextID(), username);
+        usernames.add(username);
         userIndex.put(username, numAccounts);
         numAccounts++;
         return 0;
     }
 
-    public int getNextID() {
+    private int getNextID() {
         nextID++;
         return nextID-1;
     }
@@ -57,4 +62,5 @@ public class Casino {
         }
         return null;
     }
+
 }
