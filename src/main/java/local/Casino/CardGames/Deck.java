@@ -1,4 +1,4 @@
-package main.java.local.Casino.CardGames;
+package local.Casino.CardGames;
 
 import java.util.Random;
 

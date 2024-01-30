@@ -1,8 +1,8 @@
-package main.java.local.Casino;
+package local.Casino;
 
-import main.java.local.Casino.Slots.Slots;
+import local.Casino.Slots.Slots;
 
-import main.java.local.Casino.Account.Account;
+import local.Casino.Account.Account;
 
 import java.util.Set;
 import java.util.HashSet;

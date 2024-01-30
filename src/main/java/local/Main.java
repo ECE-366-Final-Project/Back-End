@@ -1,11 +1,11 @@
-package main.java.local;
+package local;
 
-import main.java.local.Casino.Casino;
-import main.java.local.Casino.Account.Account;
-import main.java.local.Casino.Slots.Slots;
+import local.Casino.Casino;
+import local.Casino.Account.Account;
+import local.Casino.Slots.Slots;
 
-import main.java.local.Casino.CardGames.Card;
-import main.java.local.Casino.CardGames.Deck;
+import local.Casino.CardGames.Card;
+import local.Casino.CardGames.Deck;
 
 public class Main {
 
