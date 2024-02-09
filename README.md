@@ -15,5 +15,5 @@ mvn package
 
 Run with (from Project/ directory):         <br>
 ```
-java -jar target/Project-<version_no>     
+java -jar target/cooper-casino.jar     
 ``` 
