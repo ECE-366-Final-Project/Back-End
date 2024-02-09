@@ -14,6 +14,7 @@
     <name>CooperCasino</name>
     <description>Cooper Casino</description>
     <url>https://github.com/ECE-366-Final-Project</url>
+	<packaging>jar</packaging>
 	<properties>
         <java.version>21</java.version>
     
@@ -55,6 +56,7 @@
 	</dependencies>
 
     <build>
+		<finalName>cooper-casino</finalName>
 		<pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
 		  <plugins>
 			<!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
