@@ -1,0 +1,26 @@
+version: '3'
+services:
+  db:
+    image: postgres:16.1
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_PASSWORD: "gamer"
+    ports:
+      - "5432:5432"
+    volumes:
+      - "$HOME/srv/postgres:/var/lib/postgresql/data"
+  casino-backend:
+    image: eclipse-temurin:latest
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8080:8080"
+    depends_on:
+      - "db"
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_PASSWORD: "gamer"
+
