@@ -7,7 +7,7 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 ADD . /project
 WORKDIR /project
-RUN mvn -e package
+RUN mvn -T 4 -e package
 
 #stage2 run
 FROM eclipse-temurin:latest

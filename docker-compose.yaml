@@ -23,4 +23,3 @@ services:
     environment:
       POSTGRES_DB: "postgres"
       POSTGRES_PASSWORD: "gamer"
-
