@@ -19,7 +19,13 @@ public class DemoAPI{
 	// Specify an API path to make the request to
 	// type `curl localhost:8080/Demo` to make the request
 	@GetMapping("/Demo")
-	public String hello(@RequestParam(value = "name", defaultValue = "Gamer") String name) {
-		return String.format("Hello %s!~\n", name);
+	public String hello(@RequestParam(value = "name", defaultValue = "Gamer") String name,
+						@RequestParam(value = "name2", defaultValue = "Gamer2") String name2) {
+		return String.format("Hello %s and %s!~\n", name, name2);
 	}
 }
+
+// PARAM FORMATING 
+// $curl "localhost:<PORT>/Demo?<param1>=<value>&<param2>=<value>"
+// Example:
+// $curl "localhost:8080/Demo?name=james&name2=evan"
