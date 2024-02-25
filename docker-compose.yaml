@@ -1,15 +1,17 @@
 version: '3'
 services:
   db:
-    image: postgres:16.1
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_PASSWORD: "gamer"
-    ports:
-      - "5432:5432"
+    image: postgres
     volumes:
-      - "$HOME/srv/postgres:/var/lib/postgresql/data"
+      - $HOME/srv/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=password
+    expose:
+      - 5432:5432
+    ports:
+      - 5432:5432
+    restart: always
   casino-backend:
     image: eclipse-temurin:latest
     build:
@@ -22,4 +24,5 @@ services:
       - "db"
     environment:
       POSTGRES_DB: "postgres"
-      POSTGRES_PASSWORD: "gamer"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"
