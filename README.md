@@ -15,16 +15,16 @@ $mvn package
 
 Run with (from Project/ directory):         <br>
 ```
-$java -jar target/cooper-casino.jar     
+$ java -jar target/cooper-casino.jar     
 ``` 
 
 Ping API with (PORT is usually 8080)        <br>
 ```
-$curl "localhost:<PORT>/Ping"
+$ curl "localhost:<PORT>/Ping"
 ```
 
 Formatting for API requests                 <br>
 (localhost only if API is running locally)  <br>
 ```
-$curl "localhost:<PORT>/<COMMAND>?<param1>=<value>&<param2>=<value>"
+$ curl "localhost:<PORT>/<COMMAND>?<param1>=<value>&<param2>=<value>"
 ```

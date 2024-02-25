@@ -9,11 +9,10 @@ public class Blackjack {
 
     boolean gameOver = false;
 
-    private static final int MAX_PLAYER_COUNT = 6;
-
     private final static int DEALER_MIN_STAND = 18;
 
     final Account player;
+    final int bet;
     public Deck deck;
     public Card[] dealerCards;
     public Card[] playerCards;
@@ -21,12 +20,13 @@ public class Blackjack {
     int playerCardCount = 0;
     int dealerCardCount = 0;
     
-    public Blackjack(Account player) {
+    public Blackjack(Account player, int bet) {
 
         dealerCards = new Card[11];
         playerCards = new Card[11];
 
         this.player = player;
+        this.bet = bet;
         deck = new Deck();
         deck.shuffle();
 
