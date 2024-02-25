@@ -83,11 +83,11 @@ public class DemoAPI{
 			return INVALID_INPUT+": Invalid Bet";
 		};
 
-		if (game == "Slots") {
+		if (game.equals("Slots")) {
 			return playSlots(id, betAmount);
 		}
 
-		if (game == "Blackjack") {
+		if (game.equals("Blackjack")) {
 			return createBlackjack(id, betAmount);
 		}
 		return "RETURNING FROM newGame()";
