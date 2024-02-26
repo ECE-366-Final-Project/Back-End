@@ -8,9 +8,9 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=password
     expose:
-      - 5432:5432
+      - "5432"
     ports:
-      - 5432:5432
+      - "5432:5432"
     restart: always
   casino-backend:
     image: eclipse-temurin:latest
