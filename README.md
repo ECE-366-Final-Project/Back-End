@@ -9,22 +9,14 @@ $ git clone --recurse-submodules https://github.com/ECE-366-Final-Project/Back-E
 ```
 
 ## Build & Run  
-This project requires `maven` to build. You can find maven at 
-[maven.apache.org](maven.apache.org) or it can be installed via your 
-package manager.  
-For OSX: `$ brew install maven`             <br>
-For Ubuntu: `# apt install maven`           <br>
-Build with (from Back-End/ directory):      <br>
+Build & run the project with <br>
 ```
-$ mvn package
+$ docker compose up -d
 ```
+Ensure that ports `8080` and `5432` are not already bound! <br>
 
-Run with (from Project/ directory):         <br>
-```
-$ java -jar target/cooper-casino.jar     
-``` 
-
-Ping API with (PORT is usually 8080)        <br>
+## API
+Sample ping request (Default port is `8080`)        <br>
 ```
 $ curl "localhost:<PORT>/Ping"
 ```
