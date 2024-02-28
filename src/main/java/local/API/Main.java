@@ -28,12 +28,17 @@ public class Main {
 
 	// ping api
 	@GetMapping("/Status")
-	public String Status() {
+	public String status() {
 		return "CooperCasino (Status: Online)\n";
 	}
 	@GetMapping("/Ping")
 	public String ping() {
 		return "CooperCasino (Ping: Sucsessful)\n";
+	}
+
+	@GetMapping("/pp")
+	public String pp() {
+		return "CooperCasino pp (Status: Online)\n";
 	}
 
 	String DB_URL = "jdbc:postgresql://localhost:5432/postgres";
