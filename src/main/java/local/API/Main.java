@@ -115,23 +115,22 @@ public class Main {
 		return -1;
 	}
 
-	@GetMapping("/UserCount")
-	public String userCount(@RequestParam(value="userID", defaultValue = "-1") String userID) {
-		String QUERY = "SELECT COUNT(1) FROM \"user\" WHERE user_id = "+userID+";";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			int count = rs.getInt(1);
-			conn.close();
-			return userID +": "+count+"\n";
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return "ERROR: "+userID+"\n";
-	}
-
+	// @GetMapping("/UserCount")
+	// public String userCount(@RequestParam(value="userID", defaultValue = "-1") String userID) {
+	// 	String QUERY = "SELECT COUNT(1) FROM \"user\" WHERE user_id = "+userID+";";
+	// 	try {
+	// 		Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+	// 		Statement stmt = conn.createStatement();
+	// 		ResultSet rs = stmt.executeQuery(QUERY);
+	// 		rs.next();
+	// 		int count = rs.getInt(1);
+	// 		conn.close();
+	// 		return userID +": "+count+"\n";
+	// 	} catch (SQLException e) {
+	// 		e.printStackTrace();
+	// 	}
+	// 	return "ERROR: "+userID+"\n";
+	// }
 
 	@GetMapping("/PlaySlots")
 	public String playSlots(@RequestParam(value = "userID", defaultValue = "-1") String userID,
@@ -150,16 +149,29 @@ public class Main {
 		// 3. Generate Roll
 		int payout_id = rand.nextInt(1000);
 
-		// 4. Get Payout From DB
+		// 4. Get Payout And Winnings From DB
 		double payout = getPayout(payout_id);
 		if (payout < 0) {
 			return "ERROR: INVALID PAYOUT";
 		}
+		double winnings = Double.parseDouble(bet) * payout;
 
-		return "yippee";
+		// 5. Update Database (userBalance, slotsHistory)...		
+		String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE user_id = "+userID+";";
+		String QUERY_slots = "INSERT INTO public.\"slots\"(user_id, bet, payout_id, winnings) VALUES ("+userID+", "+bet+", "+payout_id+", "+winnings+")";
 
-		// 5. Update Database (userBalance, slotsHistory)...
-		// 6. Return Payout, Payout_ID, CODE
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY_user);
+			stmt.executeUpdate(QUERY_slots);
+			conn.close();
+			return winnings+", "+payout+", "+payout_id+", 200;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "400";
+		}
+		return "400";
 	}
 
 	@GetMapping("/NewBlackjack")
