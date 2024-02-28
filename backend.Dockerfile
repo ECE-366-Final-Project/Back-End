@@ -12,6 +12,6 @@
 #stage2 run
 FROM eclipse-temurin:latest
 #COPY --from=build /project/target/cooper-casino.jar /app/cooper-casino.jar
-ADD ./target /app
+COPY ./target/cooper-casino.jar /app
 EXPOSE 8080
 ENTRYPOINT java -jar /app/cooper-casino.jar

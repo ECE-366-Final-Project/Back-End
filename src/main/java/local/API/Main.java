@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import local.Casino.Slots.Slots;
 
+import java.util.Random;
 import java.sql.* ;  // for standard JDBC programs
 
 @SpringBootApplication
@@ -19,6 +20,8 @@ public class Main {
 		// Start Spring with the args passed to our program on first-run.
 		SpringApplication.run(Main.class, args);
 	}
+
+	Random rand = new Random();
 
 	// Specify an API path to make the request to
 	// type `curl localhost:8080/Demo` to make the request
@@ -61,62 +64,100 @@ public class Main {
 	// }
 
 	boolean isValidAccount(int userID) {
-		String QUERY = "SELECT COUNT(1) FROM postgres.public.user WHERE user_id = "+userID+";";
-		try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);) {
-			return (rs.getInt("count") == 1);
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			int count = rs.getInt(1);
+			conn.close();
+			System.out.println(""+count+"\n\n");
+			return (count == 1);
 		} catch (SQLException e) {
 			e.printStackTrace();
-		} 
+		}
 		return false;
 	}
 
-	boolean isValidBet(int userID, int bet) {
-		return true;
+	boolean isValidBet(int userID, double bet) {
+		String QUERY = "SELECT balance FROM public.\"user\" WHERE user_id = "+userID+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double bal = rs.getObject(1) != null ? rs.getDouble(1) : null;
+			conn.close();
+			if (bal == null) {
+				return false;
+			}
+			return (bal >= bet);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
+
+	double getPayout(int payout_id) {
+		String QUERY = "SELECT payout FROM public.\"slots_payouts\" WHERE payout_id = "+payout_id+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double payout = rs.getObject(1) != null ? rs.getDouble(1) : null;
+			conn.close();
+			return (double) payout;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
+
+	@GetMapping("/UserCount")
+	public String userCount(@RequestParam(value="userID", defaultValue = "-1") String userID) {
+		String QUERY = "SELECT COUNT(1) FROM \"user\" WHERE user_id = "+userID+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			int count = rs.getInt(1);
+			conn.close();
+			return userID +": "+count+"\n";
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return "ERROR: "+userID+"\n";
+	}
+
 
 	@GetMapping("/PlaySlots")
 	public String playSlots(@RequestParam(value = "userID", defaultValue = "-1") String userID,
 							@RequestParam(value = "bet", defaultValue = "-1") String bet) {
-		// if (isValidAccount(Integer.parseInt(userID))) {
-		// 	return "true";
-		// }
-		// return "false";
-
-		String DB_URL = "jdbc:postgresql://localhost:5432/postgres";
-		String USER = "postgres";
-		String PASS = "password";
-		String QUERY = "INSERT INTO slots_symbols(symbol_id, symbol_name) VALUES (69, 'TEST SYMBOL FOR JDBC');";
-
-		try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);) {
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return "e";
-		} 
-
-		return "e2";
-
-		// String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
-		// try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-		// 	Statement stmt = conn.createStatement();
-		// 	/* ResultSet rs = stmt.executeQuery(QUERY); */) {
-		// 	// return ""+rs.getInt(1);
-		// 	return "didn't error";
-		// } catch (SQLException e) {
-		// 	System.out.println("\n\n\n\n\n\n");
-		// 	e.printStackTrace();
-		// } 
-		// return "error";
-
-
 
 		// 1. Is Valid Account
+		if (!isValidAccount(Integer.parseInt(userID))) {
+			return "INVALID USER ID";
+		}
+
 		// 2. Balance >= Bet
+		if (!isValidBet(Integer.parseInt(userID), Double.parseDouble(bet))) {
+			return "INVALID BET";
+		}
+
 		// 3. Generate Roll
+		int payout_id = rand.nextInt(1000);
+
 		// 4. Get Payout From DB
+		double payout = getPayout(payout_id);
+		if (payout < 0) {
+			return "ERROR: INVALID PAYOUT";
+		}
+
+		return "yippee";
+
 		// 5. Update Database (userBalance, slotsHistory)...
 		// 6. Return Payout, Payout_ID, CODE
 	}
