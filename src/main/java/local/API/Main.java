@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.sql.* ;  // for standard JDBC programs
+
 @SpringBootApplication
 @RestController
 public class Main {
@@ -34,6 +36,21 @@ public class Main {
 		return "CooperCasino (Status: Online)\n";
 	}
 
+	@GetMapping("/test")
+	public String test() {
+		try (Connection con = DriverManager
+			.getConnection("jdbc:mysql://localhost:5432/postgres", "postgres", "postgres")) {
+			// use con here
+
+			Statement stmt = con.createStatement(
+				ResultSet.TYPE_SCROLL_INSENSITIVE, 
+				ResultSet.CONCUR_UPDATABLE
+			);
+			String insertSql = "INSERT INTO slots_symbols(symbol_id, symbol_name) VALUES (12, '1X BAR112');";
+				stmt.executeUpdate(insertSql);
+		} catch(Exception e) {}
+		return "CooperCasino (Status: Online)\n";
+	}
 
 	private boolean isValidGame(String game) {
 		switch (game) {
