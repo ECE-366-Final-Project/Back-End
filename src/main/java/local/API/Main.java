@@ -33,22 +33,27 @@ public class Main {
 	}
 	@GetMapping("/Ping")
 	public String ping() {
-		return "CooperCasino (Status: Online)\n";
+		return "CooperCasino (Ping: Sucsessful)\n";
 	}
 
-	@GetMapping("/test")
-	public String test() {
-		try (Connection con = DriverManager
-			.getConnection("jdbc:mysql://localhost:5432/postgres", "postgres", "postgres")) {
-			// use con here
+	String DB_URL = "jdbc:postgresql://localhost:5432/postgres";
+	String USER = "postgres";
+	String PASS = "password";
+	String QUERY = "INSERT INTO slots_symbols(symbol_id, symbol_name) VALUES (69, 'TEST SYMBOL FOR JDBC');";
+	String Q2 = "DELETE FROM slots_symbols WHERE symbol_id = 69;";
 
-			Statement stmt = con.createStatement(
-				ResultSet.TYPE_SCROLL_INSENSITIVE, 
-				ResultSet.CONCUR_UPDATABLE
-			);
-			String insertSql = "INSERT INTO slots_symbols(symbol_id, symbol_name) VALUES (12, '1X BAR112');";
-				stmt.executeUpdate(insertSql);
-		} catch(Exception e) {}
+	@GetMapping("/Test")
+	public String test() {
+		// return "hello";
+
+		try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			Statement stmt2 = conn.createStatement();
+			ResultSet rs2 = stmt2.executeQuery(Q2);) {
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} 
 		return "CooperCasino (Status: Online)\n";
 	}
 
