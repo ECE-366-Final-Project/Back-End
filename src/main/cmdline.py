@@ -45,13 +45,16 @@ if __name__ == "__main__":
     username = input("Please enter your username: ")
     UserId = int(input("Please enter your User ID"))
 
-    ## Should get user balance & data here
+    balance = 0
+
     session = True
     while(session):
         ## Should get user balance here
         print("Would you like to play Slots, or Blackjack?")
         game = input()
         bet = int(input("Please specify your starting bet: "))
+        while(bet > balance):
+            bet = int(input("Invalid bet, please enter a value less than your balance of %d",balance))
         multiplier = -1
         match game.lower():
             case "slots":
