@@ -41,7 +41,7 @@ public class Main {
 		return "CooperCasino (Ping: Sucsessful)\n";
 	}
 
-	String DB_URL = "jdbc:postgresql://localhost:5432/postgres";
+	String DB_URL = "jdbc:postgresql://db:5432/postgres";
 	String USER = "postgres";
 	String PASS = "password";
 
@@ -54,7 +54,6 @@ public class Main {
 			rs.next();
 			int count = rs.getInt(1);
 			conn.close();
-			System.out.println(""+count+"\n\n");
 			return (count == 1);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -136,7 +135,7 @@ public class Main {
 			e.printStackTrace();
 			return "400";
 		}
-		return "400";
+		// return "400";
 	}
 
 	@GetMapping("/NewBlackjack")
