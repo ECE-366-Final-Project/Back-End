@@ -9,9 +9,14 @@ $ git clone --recurse-submodules https://github.com/ECE-366-Final-Project/Back-E
 ```
 
 ## Build & Run  
-Build & run the project with <br>
+Build the project with
 ```
-$ docker compose up -d
+$ mvn package
+```
+
+Initialize the project with <br>
+```
+$ docker compose up --build -d
 ```
 Ensure that ports `8080` and `5432` are not already bound! <br>
 
