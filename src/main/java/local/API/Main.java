@@ -45,24 +45,6 @@ public class Main {
 	String USER = "postgres";
 	String PASS = "password";
 
-
-	// String QUERY = "INSERT INTO slots_symbols(symbol_id, symbol_name) VALUES (69, 'TEST SYMBOL FOR JDBC');";
-	// String Q2 = "DELETE FROM slots_symbols WHERE symbol_id = 69;";
-	// @GetMapping("/Test")
-	// public String test() {
-	// 	// return "hello";
-
-	// 	try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-	// 		Statement stmt = conn.createStatement();
-	// 		ResultSet rs = stmt.executeQuery(QUERY);
-	// 		Statement stmt2 = conn.createStatement();
-	// 		ResultSet rs2 = stmt2.executeQuery(Q2);) {
-	// 	} catch (SQLException e) {
-	// 		e.printStackTrace();
-	// 	} 
-	// 	return "CooperCasino (Status: Online)\n";
-	// }
-
 	boolean isValidAccount(int userID) {
 		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
 		try {
@@ -114,23 +96,6 @@ public class Main {
 		}
 		return -1;
 	}
-
-	// @GetMapping("/UserCount")
-	// public String userCount(@RequestParam(value="userID", defaultValue = "-1") String userID) {
-	// 	String QUERY = "SELECT COUNT(1) FROM \"user\" WHERE user_id = "+userID+";";
-	// 	try {
-	// 		Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-	// 		Statement stmt = conn.createStatement();
-	// 		ResultSet rs = stmt.executeQuery(QUERY);
-	// 		rs.next();
-	// 		int count = rs.getInt(1);
-	// 		conn.close();
-	// 		return userID +": "+count+"\n";
-	// 	} catch (SQLException e) {
-	// 		e.printStackTrace();
-	// 	}
-	// 	return "ERROR: "+userID+"\n";
-	// }
 
 	@GetMapping("/PlaySlots")
 	public String playSlots(@RequestParam(value = "userID", defaultValue = "-1") String userID,
@@ -188,59 +153,6 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "3";
 	}
-
-	// private boolean isValidGame(String game) {
-	// 	switch (game) {
-	// 		case "Slots":
-	// 			return true;
-	// 		case "Blackjack":
-	// 			return true;
-	// 		default:
-	// 			return false;
-	// 	}
-	// }
-
-	// @GetMapping("/NewGame")
-	// public String newGame(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
-	// 						@RequestParam(value = "game", defaultValue = "-1") String game,
-	// 						@RequestParam(value = "bet", defaultValue = "-1") String bet) {
-	// 	if (!isValidGame(game)) {
-	// 		return INVALID_INPUT+": Invalid Game Type";
-	// 	}
-
-	// 	int id = -1;
-	// 	int betAmount = -1;
-
-	// 	try {
-	// 		id = Integer.parseInt(userID);
-	// 	} catch(Exception e) {
-	// 		return INVALID_INPUT+": Invalid User ID";
-	// 	};
-
-	// 	try {
-	// 		betAmount = Integer.parseInt(bet);
-	// 	} catch(Exception e) {
-	// 		return INVALID_INPUT+": Invalid Bet";
-	// 	};
-
-	// 	if (id < 0) {
-	// 					return INVALID_INPUT+": Invalid User ID";
-	// 	}
-
-	// 	if (betAmount < 0) {
-	// 					return INVALID_INPUT+": Invalid Bet";
-	// 	}
-
-
-	// 	if (game.equals("Slots")) {
-	// 		return playSlots(id, betAmount);
-	// 	}
-
-	// 	if (game.equals("Blackjack")) {
-	// 		return createBlackjack(id, betAmount);
-	// 	}
-	// 	return OK+": RETURNING FROM newGame()";
-	// }
 
 }
 
