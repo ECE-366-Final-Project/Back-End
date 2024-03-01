@@ -163,7 +163,7 @@ public class Main {
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
+			stmt.executeUpdate(QUERY);
 			conn.close();
 			return true;
 		} catch (SQLException e) {
@@ -193,7 +193,10 @@ public class Main {
 			cachedBlackjackGames.add(game);
 			activeGameLookup.put(Integer.parseInt(userID), game);
 			// Insert game into "blackjack" table of database
-			return insertBlackjackGameDB(game, Double.parseDouble(bet), true, Optional.empty()) ? "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";" : "400: ERROR INSERTING INTO DATABSE";
+			if (insertBlackjackGameDB(game, Double.parseDouble(bet), true, Optional.empty())) {
+				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
+			}
+			"400: ERROR INSERTING INTO DATABSE";
 		}
 		return "400, GAME ALREADY IN PROGRESS";
 	}

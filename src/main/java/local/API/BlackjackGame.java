@@ -31,11 +31,11 @@ public class BlackjackGame {
     }
 
     private String deal(int size) {
-        if (size > deck.length()) {
+        if (2*size > deck.length()) {
             return null;
         }
-        String cards = deck.substring(0, size);
-        deck = deck.substring(size);
+        String cards = deck.substring(0, 2*size);
+        deck = deck.substring(2*size);
         return cards;
     }
 
