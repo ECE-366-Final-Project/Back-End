@@ -138,8 +138,15 @@ public class Main {
 		// return "400";
 	}
 
+	// LinkedList<BlackjackGame> = new LinkedList<BlackjackGame>();
+
 	@GetMapping("/NewBlackjack")
 	public String newBlackjack() {
+		// Check if valid userID
+		// Check if user has active game
+		// Check if game is hashed
+			// Rehash game
+		// Get deck and update tol
 		return "1";
 	}
 
