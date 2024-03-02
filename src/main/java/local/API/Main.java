@@ -137,9 +137,9 @@ public class Main {
 			return "200,"+winnings+", "+payout+", "+payout_id+";";
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "400";
+			// return "400";
 		}
-		// return "400";
+		return "400";
 	}
 
 	private boolean isActiveGame(int userID) {
@@ -154,6 +154,7 @@ public class Main {
 			return (count > 0);
 		} catch (SQLException e) {
 			e.printStackTrace();
+			// return false;
 		}
 		return false;
 	}
@@ -196,7 +197,7 @@ public class Main {
 			if (insertBlackjackGameDB(game, Double.parseDouble(bet), true, Optional.empty())) {
 				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
 			}
-			"400: ERROR INSERTING INTO DATABSE";
+			return "400: ERROR INSERTING INTO DATABSE";
 		}
 		return "400, GAME ALREADY IN PROGRESS";
 	}

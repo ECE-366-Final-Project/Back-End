@@ -54,7 +54,7 @@ public class BlackjackGame {
         timeToKill_SECONDS = (System.currentTimeMillis() / 1000L) + TIME_TO_LIVE_SECONDS;
     }
 
-    public void shuffleDeck() {
+    public void shuffleDeck() { // TODO : MAKE IT SHUFFLE PAIRS OF CHARACTERS
         char[] charArr = deck.toCharArray();
         for (int i = 0; i < deck.length(); i++) {
             char temp = charArr[i];
