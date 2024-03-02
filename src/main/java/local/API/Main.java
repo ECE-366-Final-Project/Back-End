@@ -242,7 +242,7 @@ public class Main {
 	// true -- can be used
 	// false -- cant be used
 	private boolean isValidUsername(String username) {
-		//regex of valid character patterns
+		//regex of valid character patterns -- only alphanumeric (minus number-only) names.
 		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
 		if(!username.matches(pattern)){
 			return false;
@@ -253,6 +253,7 @@ public class Main {
 			return false;
 		}
 
+		// GAMING ENSUES
 		return true;
 	}
 
@@ -267,8 +268,8 @@ public class Main {
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(Q_FETCHINFO);
 			conn.close();
-			return rs.isBeforeFirst();
-		} catch (SQLException e) { // likely user dne TODO fix this for robust erroring
+			return rs.isBeforeFirst(); // returns false on an empty response! empty == DNE
+		} catch (SQLException e) {
 			e.printStackTrace();
 			return false;
 		}
