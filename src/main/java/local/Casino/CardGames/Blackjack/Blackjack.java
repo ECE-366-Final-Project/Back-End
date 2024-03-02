@@ -2,7 +2,6 @@ package local.Casino.CardGames.Blackjack;
 
 import local.Casino.CardGames.Card;
 import local.Casino.CardGames.Deck;
-
 import local.Casino.Account.Account;
 
 public class Blackjack {
