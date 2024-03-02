@@ -63,9 +63,10 @@ def play_blackjack(ID,initial_bet):
 if __name__ == "__main__":
     username = input("Please enter your username: ")
     code = query("CreateUser", {"username": username})[0]
+    userdata = query("UserInfo", username)
     #Get userID, balance here:
-    userid = 0
-    balance = 100
+    userid = int(userdata[1])
+    balance = int(userdata[2])
     session = True
     winnings = -1
     while(session):
