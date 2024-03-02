@@ -17,8 +17,9 @@ def query(func,payload):
 def parse(query_load):
     str = query_load.text
     words = str.split(',')
-    if words[0] == "400" :
-        raise Exception("Something went wrong: error from API is %s" % words[1]) 
+    if words[0] == "400":
+#        print("Something went wrong: error from API is %s" % words[1])
+        pass 
     return words
     #Status code is always first element in word
 
@@ -62,11 +63,15 @@ def play_blackjack(ID,initial_bet):
 ## Stores information about the session, such as userID & other relevant user info
 if __name__ == "__main__":
     username = input("Please enter your username: ")
-    code = query("CreateUser", {"username": username})[0]
     userdata = query("UserInfo", username)
+    if(userdata[0] == "400"):
+        code = query("CreateUser", {"username": username})[0]
+        userdata = query("UserInfo", username)
+
     #Get userID, balance here:
     userid = int(userdata[1])
-    balance = int(userdata[2])
+    #messy ahh call but it has to be done
+    balance = int(userdata[2].split(";")[0])
     session = True
     winnings = -1
     while(session):

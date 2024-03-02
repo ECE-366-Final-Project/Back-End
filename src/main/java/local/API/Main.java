@@ -274,6 +274,30 @@ public class Main {
 			return false;
 		}
 	}
+//Vaibhavs Attempt at creating CheckUser as an exposed api call
+
+	// @GetMapping("CheckUser")
+	// private String checkUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
+	// 	String Q_FETCHINFO = "SELECT * FROM public.user WHERE username = '"+username+"';";
+	// 	try{
+	// 		// talk to postgres
+	// 		Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+	// 		Statement stmt = conn.createStatement();
+	// 		ResultSet rs = stmt.executeQuery(Q_FETCHINFO);
+	// 		conn.close();
+	// 		if(rs.isBeforeFirst()){ // returns false on an empty response! empty == DNE
+	// 			return "200, YES;"
+	// 		}
+	// 		return "200, NO;"; 
+	// 	} catch (SQLException e) {
+	// 		e.printStackTrace();
+	// 		return "400;";
+	// 	}
+	// }
+
+
+
+	
 	@GetMapping("/CreateUser")
 	public String createUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
 		if(!isValidUsername(username)) {
