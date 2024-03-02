@@ -228,9 +228,29 @@ public class Main {
 	}
 */
 
+	private boolean validUsername(String username) {
+		//regex of valid character patterns
+		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
+		return username.matches(pattern);
+	}
+
 	@GetMapping("/CreateUser")
-	public String createUser() {
-		return "300";
+	public String createUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
+		if(!validUsername(username)) {
+			return "400, INVALID USERNAME. DB UNCHANGED.";
+		}
+
+		String QUERY = "INSERT INTO public.user(username, balance, created_at) VALUES ('"+username+"', 0, NOW());";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return "200;";
 	}
 /*
 	@GetMapping("/DeleteUser")
