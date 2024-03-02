@@ -228,13 +228,21 @@ public class Main {
 	}
 */
 
+	// Returns whether a given username is valid for user-creation or not
+	// true -- can be used
+	// false -- cant be used
 	private boolean isValidUsername(String username) {
 		//regex of valid character patterns
 		if (username.equals("-1")) {
 			return false;
 		}
 		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
-		return username.matches(pattern);
+		if(!username.matches(pattern)){
+			return false;
+		}
+
+		//finally, check if this exists in db
+		return true;
 	}
 
 	@GetMapping("/CreateUser")
@@ -243,14 +251,17 @@ public class Main {
 			return "400, INVALID USERNAME. DB UNCHANGED.";
 		}
 
-		String QUERY = "INSERT INTO public.\"user\" (username, created_at) VALUES ('"+username+"', NOW());";
+		// we have a valid username.
+		String Q_ADDUSER = "INSERT INTO public.user(username, balance, created_at) VALUES ('"+username+"', 0, NOW());";
 		try {
+			// add the username
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(QUERY);
+			stmt.executeUpdate(Q_ADDUSER);
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR";
 		}
 
 		return "200;";
@@ -270,12 +281,11 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "300";
 	}
-
+*/
 	@GetMapping("/UserInfo")
-	public String rejoinBlackjack() {
+	public String userInfo() {
 		return "300";
 	}
-*/
 }
 
 // PARAM FORMATING 
