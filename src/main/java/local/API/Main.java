@@ -242,9 +242,6 @@ public class Main {
 	// true -- can be used
 	// false -- cant be used
 	private boolean isValidUsername(String username) {
-		if (username.equals("-1")) {
-			return false;
-		}
 		//regex of valid character patterns
 		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
 		if(!username.matches(pattern)){
@@ -252,9 +249,30 @@ public class Main {
 		}
 
 		//finally, check if this exists in db
+		if(userExists(username)){
+			return false;
+		}
+
 		return true;
 	}
 
+	// Returns whether username is present in db
+	// true -- is in db
+	// false -- is not in db
+	private boolean userExists(String username) {
+		String Q_FETCHINFO = "SELECT * FROM public.user WHERE username = '"+username+"';";
+		try{
+			// talk to postgres
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(Q_FETCHINFO);
+			conn.close();
+			return rs.isBeforeFirst();
+		} catch (SQLException e) { // likely user dne TODO fix this for robust erroring
+			e.printStackTrace();
+			return false;
+		}
+	}
 	@GetMapping("/CreateUser")
 	public String createUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
 		if(!isValidUsername(username)) {
