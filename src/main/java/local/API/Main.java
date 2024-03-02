@@ -154,10 +154,10 @@ public class Main {
 			e.printStackTrace();
 			// return "400";
 		}
-		return "400";
+		return "400;";
 	}
 
-	private boolean isActiveGame(int userID) {
+	private boolean hasActiveGame(int userID) {
 		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -174,7 +174,7 @@ public class Main {
 		return false;
 	}
 
-	private boolean insertBlackjackGameDB(BlackjackGame game, double bet, boolean isActive, Optional<Integer> winnings) {
+	private boolean insertBlackjackGameDB(BlackjackGame game, double bet) {
 		String QUERY = "INSERT INTO public.\"blackjack\" (user_id, bet, player_hand, dealer_hand) VALUES ("+game.userID+", "+bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -203,22 +203,33 @@ public class Main {
 			return "400, INVALID BET;";
 		}
 		// 3. Check if user has active game
-		if (!isActiveGame(Integer.parseInt(userID))) {
+		if (!hasActiveGame(Integer.parseInt(userID))) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
 			BlackjackGame game = new BlackjackGame(Integer.parseInt(userID), Optional.empty(),  Optional.empty(),  Optional.empty());
 			cachedBlackjackGames.add(game);
 			activeGameLookup.put(Integer.parseInt(userID), game);
 			// Insert game into "blackjack" table of database
-			if (insertBlackjackGameDB(game, Double.parseDouble(bet), true, Optional.empty())) {
+			if (insertBlackjackGameDB(game, Double.parseDouble(bet))) {
 				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
 			}
-			return "400: ERROR INSERTING INTO DATABSE";
+			return "400, ERROR INSERTING INTO DATABSE;";
 		}
-		return "400, GAME ALREADY IN PROGRESS";
+		return "400, GAME ALREADY IN PROGRESS;";
 	}
-/*
+
+	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	// HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
+
 	@GetMapping("/UpdateBlackjack")
-	public String updateBlackjack() {
+	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
+									@RequestParam(value = "move", defaultValue = "-1") String move) {
+		BlackjackGame game = activeGameLookup.get(Integer.parseInt(UserID));
+		if (game == null) {
+			// check database
+		}
+		game.resetTimeToKill();
+		cachedBlackjackGames.remove(game);
+		cachedBlackjackGames.add(game);
 		return "300";
 	}
 
@@ -226,7 +237,6 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "300";
 	}
-*/
 
 	// Returns whether a given username is valid for user-creation or not
 	// true -- can be used
@@ -272,6 +282,13 @@ public class Main {
 		return "300";
 	}
 
+	@GetMapping("/UserInfo")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+*/
+
+/*
 	@GetMapping("/Deposit")
 	public String rejoinBlackjack() {
 		return "300";
