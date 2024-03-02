@@ -212,6 +212,31 @@ public class Main {
 		return "300";
 	}
 
+	@GetMapping("/CreateUser")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+
+	@GetMapping("/DeleteUser")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+
+	@GetMapping("/Deposit")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+
+	@GetMapping("/Withdraw")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+
+	@GetMapping("/UserInfo")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+
 }
 
 // PARAM FORMATING 
