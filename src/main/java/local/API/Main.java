@@ -223,7 +223,7 @@ public class Main {
 	@GetMapping("/UpdateBlackjack")
 	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
 									@RequestParam(value = "move", defaultValue = "-1") String move) {
-		BlackjackGame game = activeGameLookup.get(Integer.parseInt(UserID));
+		BlackjackGame game = activeGameLookup.get(Integer.parseInt(userID));
 		if (game == null) {
 			// check database
 		}
