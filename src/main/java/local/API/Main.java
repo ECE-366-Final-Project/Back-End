@@ -226,9 +226,10 @@ public class Main {
 		BlackjackGame game = activeGameLookup.get(Integer.parseInt(userID));
 		if (game == null) {
 			// check database
+		} else {
+			cachedBlackjackGames.remove(game);
 		}
 		game.resetTimeToKill();
-		cachedBlackjackGames.remove(game);
 		cachedBlackjackGames.add(game);
 		return "300";
 	}
@@ -250,9 +251,20 @@ public class Main {
 		if(!username.matches(pattern)){
 			return false;
 		}
-
 		//finally, check if this exists in db
-		return true;
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = "+username+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			int count = rs.getInt(1);
+			conn.close();
+			return (count == 0);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 	@GetMapping("/CreateUser")
