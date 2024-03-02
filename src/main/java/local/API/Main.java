@@ -154,7 +154,7 @@ public class Main {
 			e.printStackTrace();
 			// return "400";
 		}
-		return "400";
+		return "400;";
 	}
 
 	private boolean hasActiveGame(int userID) {
@@ -212,13 +212,24 @@ public class Main {
 			if (insertBlackjackGameDB(game, Double.parseDouble(bet))) {
 				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
 			}
-			return "400: ERROR INSERTING INTO DATABSE";
+			return "400, ERROR INSERTING INTO DATABSE;";
 		}
-		return "400, GAME ALREADY IN PROGRESS";
+		return "400, GAME ALREADY IN PROGRESS;";
 	}
-/*
+
+	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	// HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
+
 	@GetMapping("/UpdateBlackjack")
-	public String updateBlackjack() {
+	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
+									@RequestParam(value = "move", defaultValue = "-1") String move) {
+		BlackjackGame game = activeGameLookup.get(Integer.parseInt(UserID));
+		if (game == null) {
+			// check database
+		}
+		game.resetTimeToKill();
+		cachedBlackjackGames.remove(game);
+		cachedBlackjackGames.add(game);
 		return "300";
 	}
 
@@ -226,7 +237,6 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "300";
 	}
-*/
 
 	private boolean isValidUsername(String username) {
 		//regex of valid character patterns
