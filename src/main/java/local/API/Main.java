@@ -157,7 +157,7 @@ public class Main {
 		return "400";
 	}
 
-	private boolean isActiveGame(int userID) {
+	private boolean hasActiveGame(int userID) {
 		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -174,7 +174,7 @@ public class Main {
 		return false;
 	}
 
-	private boolean insertBlackjackGameDB(BlackjackGame game, double bet, boolean isActive, Optional<Integer> winnings) {
+	private boolean insertBlackjackGameDB(BlackjackGame game, double bet) {
 		String QUERY = "INSERT INTO public.\"blackjack\" (user_id, bet, player_hand, dealer_hand) VALUES ("+game.userID+", "+bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -203,13 +203,13 @@ public class Main {
 			return "400, INVALID BET;";
 		}
 		// 3. Check if user has active game
-		if (!isActiveGame(Integer.parseInt(userID))) {
+		if (!hasActiveGame(Integer.parseInt(userID))) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
 			BlackjackGame game = new BlackjackGame(Integer.parseInt(userID), Optional.empty(),  Optional.empty(),  Optional.empty());
 			cachedBlackjackGames.add(game);
 			activeGameLookup.put(Integer.parseInt(userID), game);
 			// Insert game into "blackjack" table of database
-			if (insertBlackjackGameDB(game, Double.parseDouble(bet), true, Optional.empty())) {
+			if (insertBlackjackGameDB(game, Double.parseDouble(bet))) {
 				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
 			}
 			return "400: ERROR INSERTING INTO DATABSE";
@@ -243,7 +243,7 @@ public class Main {
 			return "400, INVALID USERNAME. DB UNCHANGED.";
 		}
 
-		String QUERY = "INSERT INTO public.\"user\" (username, created_at) VALUES ('"+username+"', NOW());";
+		String QUERY = "INSERT INTO public.user (username, created_at) VALUES ('"+username+"', NOW());";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -261,17 +261,19 @@ public class Main {
 		return "300";
 	}
 
+	@GetMapping("/UserInfo")
+	public String rejoinBlackjack() {
+		return "300";
+	}
+*/
+
+/*
 	@GetMapping("/Deposit")
 	public String rejoinBlackjack() {
 		return "300";
 	}
 
 	@GetMapping("/Withdraw")
-	public String rejoinBlackjack() {
-		return "300";
-	}
-
-	@GetMapping("/UserInfo")
 	public String rejoinBlackjack() {
 		return "300";
 	}
