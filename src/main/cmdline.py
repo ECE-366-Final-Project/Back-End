@@ -4,13 +4,35 @@
 ##Prereqs: Install request
 import requests
 
+
+head = "http://localhost:8080/"
 EXIT_CODES = []
 
+def query(func,payload):
+    data = requests.get(head + func, payload)
+    return parse(data)
+
+
+# needed to parse HTTP requests: VERY VERY BAD
+def parse(query_load):
+    str = query_load.text
+    words = str.split(',')
+    if words[0] == "400" :
+        raise Exception("Something went wrong: error from API is %s" % words[1]) 
+    return words
+    #Status code is always first element in word
+
+
 def play_slots(ID,bet):
-    multiplier = 0
-    ## This is where a request to the server would go
-    ##
-    return multiplier
+    call = "PlaySlots"
+    params = {'userID':ID,
+              'bet':str(bet)}
+    data = query(call, params)
+    code = int(data[0])
+    #PayoutID is currently set to the 3rd element
+    print("You rolled a %s" % data[3])
+    winnings = float(data[2])
+    return winnings
 
 def play_blackjack(ID,initial_bet):
     multiplier = -1
@@ -23,12 +45,9 @@ def play_blackjack(ID,initial_bet):
         print("Your hand is: ", hand)
         print("The dealer has: ", dealer_hand)
         shd = input("Would you like to stand, hit, or double down?")
-        cmd = "S"
         match shd.lower():
-            ##Set cmd to whatever command is
             case "stand":
                 pass
-                ##Set cmd to whatever command is
             case "hit":
                 pass
             case "double down":
@@ -43,33 +62,31 @@ def play_blackjack(ID,initial_bet):
 ## Stores information about the session, such as userID & other relevant user info
 if __name__ == "__main__":
     username = input("Please enter your username: ")
-    UserId = int(input("Please enter your User ID"))
-
-    balance = 0
-
+    code = query("CreateUser", {"username": username})[0]
+    #Get userID, balance here:
+    userid = 0
+    balance = 100
     session = True
+    winnings = -1
     while(session):
         ## Should get user balance here
-        print("Would you like to play Slots, or Blackjack?")
+        print(" Hi %s, Would you like to play Slots, or Blackjack?" % (username))
         game = input()
         bet = int(input("Please specify your starting bet: "))
         while(bet > balance):
-            bet = int(input("Invalid bet, please enter a value less than your balance of %d",balance))
-        multiplier = -1
+            bet = int(input("Invalid bet, please enter a value less than your balance of %d: " % (balance)))
+
         match game.lower():
             case "slots":
-               multiplier = play_slots(UserId,bet)
-            case "Blackjack":
-                multiplier = play_blackjack(UserId,bet)
+               winnings = play_slots(userid,bet)
+            case "blackjack":
+                 multiplier = play_blackjack(userid,bet)
             case "No":
-                session = False
+                break
 
-        if(multiplier > 1):
-            print("You won $ %d!", multiplier*bet)
-        elif(multiplier == 1):
-            print("You drew: Money returned")
-        elif(multiplier < 1):
-            print("You've recieved %d", multiplier*bet)
-
+        if winnings > bet:
+            print("You won $ %d!" % winnings)
+        else:
+            print("You've recieved %d" % winnings)
         print("Would you like to play again?")
-        sucess = (input().lower() == "y")
+        session = (input().lower() == "y")
