@@ -242,10 +242,10 @@ public class Main {
 	// true -- can be used
 	// false -- cant be used
 	private boolean isValidUsername(String username) {
-		//regex of valid character patterns
 		if (username.equals("-1")) {
 			return false;
 		}
+		//regex of valid character patterns
 		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
 		if(!username.matches(pattern)){
 			return false;
@@ -300,8 +300,25 @@ public class Main {
 	}
 */
 	@GetMapping("/UserInfo")
-	public String userInfo() {
-		return "300";
+	public String userInfo(@RequestParam(value = "username", defaultValue = "-1") String username) {
+		String Q_FETCHINFO = "SELECT user_id, balance FROM public.user WHERE username = '"+username+"';";
+		long user_ID;
+		double bal;
+		try{
+			// talk to postgres
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(Q_FETCHINFO);
+			rs.next();
+			user_ID = rs.getInt(1);
+			bal = rs.getObject(2) != null ? rs.getDouble(2) : null;
+			conn.close();
+		} catch (SQLException e) { // likely user dne TODO fix this for robust erroring
+			e.printStackTrace();
+			return "400, User does not exist";
+		}
+		
+		return "300, "+user_ID+", "+bal+";";
 	}
 }
 
