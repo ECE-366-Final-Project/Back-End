@@ -4,7 +4,7 @@ services:
     image: postgres
     volumes:
       - $HOME/srv/postgres:/var/lib/postgresql/data
-      - ./database/:/docker-entrypoint-initdb.d/
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=password

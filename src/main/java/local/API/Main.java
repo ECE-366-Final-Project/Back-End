@@ -20,7 +20,21 @@ import java.sql.* ;  // for standard JDBC programs
 @SpringBootApplication
 @RestController
 public class Main {
+	private static final String DB = System.getenv("POSTGRES_DB");
+	private static final String DB_URL ="jdbc:postgresql://db:5432/"+DB; 
+	private static final String USER = System.getenv("POSTGRES_USER");
+	private static final String PASS = System.getenv("POSTGRES_PASSWORD");
+	
 	public static void main(String[] args){
+		// Test connection to database. If its not active, fail loudly.
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+
 		// Start Spring with the args passed to our program on first-run.
 		SpringApplication.run(Main.class, args);
 	}
@@ -45,9 +59,10 @@ public class Main {
 		return "CooperCasino (Ping: Sucsessful)\n";
 	}
 
-	String DB_URL = "jdbc:postgresql://db:5432/postgres";
-	String USER = "postgres";
-	String PASS = "password";
+//	String DB_URL = "jdbc:postgresql://db:5432/postgres";
+//	String USER = "postgres";
+//	String PASS = "password";
+
 
 	private boolean isValidAccount(int userID) {
 		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
@@ -201,7 +216,7 @@ public class Main {
 		}
 		return "400, GAME ALREADY IN PROGRESS";
 	}
-
+/*
 	@GetMapping("/UpdateBlackjack")
 	public String updateBlackjack() {
 		return "300";
@@ -211,12 +226,13 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "300";
 	}
+*/
 
 	@GetMapping("/CreateUser")
-	public String rejoinBlackjack() {
+	public String createUser() {
 		return "300";
 	}
-
+/*
 	@GetMapping("/DeleteUser")
 	public String rejoinBlackjack() {
 		return "300";
@@ -236,7 +252,7 @@ public class Main {
 	public String rejoinBlackjack() {
 		return "300";
 	}
-
+*/
 }
 
 // PARAM FORMATING 
