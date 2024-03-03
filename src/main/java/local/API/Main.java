@@ -383,8 +383,7 @@ public class Main {
 		if(!username.matches(pattern)){
 			return false;
 		}
-		//finally, check if this exists in db
-		return !usernameIsInUse(username);
+		return true;
 	}
 
 	@GetMapping("/CreateUser")
@@ -473,10 +472,26 @@ public class Main {
 			return "500, INTERNAL SERVER ERROR;";
 		}
 	}
-
+//This should be split into two functions: 1 that returns userid given a username (or nothing)
+// Another that returns balance given a username
 	@GetMapping("/UserInfo")
-	public String userInfo() {
-		return "300";
+	public String userInfo( @RequestParam(value="username", defaultValue = "-1") String username) {
+		String QUERY = "SELECT balance, user_id FROM public.\"user\" WHERE username =" + username + ";";
+		if(!usernameIsInUse(username)){
+			return "300, USER DOES NOT EXIST";
+		}
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double bal = rs.getObject(1) != null ? rs.getDouble(1) : null;
+			String userid = rs.getString(2);
+			return "200, " +bal+","+userid+";";
+		} catch (SQLException e) {
+				e.printStackTrace();
+				return "400,SQL FAILURE;";
+		}
 	}
 }
 
