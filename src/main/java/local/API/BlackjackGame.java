@@ -17,6 +17,9 @@ public class BlackjackGame {
     private String playersCards;
     private String dealersCards;
 
+    public BlackjackGame next;
+    public BlackjackGame prev;
+
     public BlackjackGame(int userID, Optional<String> deck, Optional<String> playersCards, Optional<String> dealersCards) {
         // If not provided with deck, playersCards AND dealersCards, the constructor will reset the game
         timeToKill_SECONDS = (System.currentTimeMillis() / 1000L) + TIME_TO_LIVE_SECONDS;

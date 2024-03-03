@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
+import local.API.BlackjackLinkedList;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -188,7 +189,8 @@ public class Main {
 		return false;
 	}
 
-	LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	BlackjackLinkedList cachedBlackjackGames = new BlackjackLinkedList();
 	HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
 
 	@GetMapping("/NewBlackjack")
@@ -229,6 +231,7 @@ public class Main {
 		} else {
 			cachedBlackjackGames.remove(game);
 		}
+		// resolve blackjack logic
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		return "300";
@@ -252,19 +255,7 @@ public class Main {
 			return false;
 		}
 		//finally, check if this exists in db
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = "+username+";";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			int count = rs.getInt(1);
-			conn.close();
-			return (count == 0);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return false;
+		return !usernameIsInUse(username);
 	}
 
 	@GetMapping("/CreateUser")
@@ -290,27 +281,102 @@ public class Main {
 	}
 /*
 	@GetMapping("/DeleteUser")
-	public String rejoinBlackjack() {
+	public String deleteUser() {
 		return "300";
 	}
 
 	@GetMapping("/UserInfo")
-	public String rejoinBlackjack() {
+	public String userInfo() {
 		return "300";
 	}
 */
 
-/*
+	private boolean usernameIsInUse(String username) {
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = "+username+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			int count = rs.getInt(1);
+			conn.close();
+			return (count > 0);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	@GetMapping("/Deposit")
-	public String rejoinBlackjack() {
-		return "300";
+	public String deposit(	@RequestParam(value = "username", defaultValue = "-1") String username,
+							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
+		double amount;
+		try {
+			amount = Double.parseDouble(depositAmount);
+		} catch (Exception e) {
+			return "400, INVALID AMOUNT;";
+		}
+		if (!usernameIsInUse(username)) {
+			return "400, INVALID USERNAME;";
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE username = "+username+";";
+		
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			conn.close();
+			return "200, DEPOSIT SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
 
 	@GetMapping("/Withdraw")
-	public String rejoinBlackjack() {
-		return "300";
+	public String withdraw(	@RequestParam(value = "username", defaultValue = "-1") String username,
+							@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
+		double amount;
+		try {
+			amount = Double.parseDouble(withdrawAmount);
+		} catch (Exception e) {
+			return "400, INVALID AMOUNT;";
+		}
+		if (!usernameIsInUse(username)) {
+			return "400, INVALID USERNAME;";
+		}
+		String QUERY = "SELECT balance FROM public.\"user\" WHERE username = "+username+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double bal = rs.getObject(1) != null ? rs.getDouble(1) : null;
+			conn.close();
+			if (bal == null) {
+				return "500, INTERNAL SERVER ERROR;";
+			}
+			if (bal < amount) {
+				return "400, INVALID AMOUNT: BALANCE TOO LOW;";
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = "+username+";";
+		
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			conn.close();
+			return "200, WITHDRAWAL SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
-*/
+
 	@GetMapping("/UserInfo")
 	public String userInfo() {
 		return "300";
