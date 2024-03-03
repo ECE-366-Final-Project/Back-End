@@ -4,6 +4,7 @@
 ##Prereqs: Install request
 import requests
 
+head = "http://localhost:8080/"
 EXIT_CODES = []
 
 def query(func,payload):
@@ -16,16 +17,21 @@ def parse(query_load):
     str = query_load.text
     words = str.split(',')
     if words[0] == "400":
-        raise Exception("Something went wrong: error from API is %s" % words[1])
+        raise Exception("Something went wrong: error from API is %s" % words[1:])
     return words
     #Status code is always first element in word
 
 
 def play_slots(ID,bet):
-    multiplier = 0
-    ## This is where a request to the server would go
-    ##
-    return multiplier
+    winnings = 0
+    payload = {
+        "userID": ID,
+        "bet": bet
+    }
+    data = query("PlaySlots",payload)
+    payout = int(data[1])
+    print("You rolled a %s" % data[3][:-1])
+    return payout
 
 def play_blackjack(ID,initial_bet):
     multiplier = -1
@@ -66,30 +72,50 @@ if __name__ == "__main__":
     #Get userID, balance here:
     userid = int(userdata[1])
     #messy ahh call but it has to be done
-    balance = int(userdata[2].split(";")[0])
     session = True
     while(session):
-        ## Should get user balance here
-        print("Would you like to play Slots, or Blackjack?")
+        userdata = query("UserInfo", usernd)
+        balance = int(userdata[2][:-1])
+        print("You have $%d" % balance)
+        print("Would you like to make a deposit?")
+        dep = (input().lower() == "y")
+        if dep:
+            dep_amnt = int(input("Enter deposit amount: "))
+            dep_payload = { "userID": userid,
+                            "amount": dep_amnt}
+            query("Deposit", dep_payload)
+            userdata = query("UserInfo", usernd)
+            balance = int(userdata[2][:-1])
+
+        print("Would you like to play Slots?")
         game = input()
         bet = int(input("Please specify your starting bet: "))
         while(bet > balance):
-            bet = int(input("Invalid bet, please enter a value less than your balance of %d",balance))
-        multiplier = -1
+            bet = int(input("Invalid bet, please enter a value less than your balance of %d" % balance))
+        payout = -1
         match game.lower():
             case "slots":
-               multiplier = play_slots(UserId,bet)
-            case "Blackjack":
-                multiplier = play_blackjack(UserId,bet)
-            case "No":
+               payout = play_slots(userid,bet)
+            case "blackjack":
+                multiplier = play_blackjack(userid,bet)
+            case _:
                 session = False
-
-        if(multiplier > 1):
-            print("You won $ %d!", multiplier*bet)
-        elif(multiplier == 1):
-            print("You drew: Money returned")
-        elif(multiplier < 1):
-            print("You've recieved %d", multiplier*bet)
+        if(payout > bet):
+            print("You won $ %d!" % payout)
+        elif(-1 != payout):
+            print("You've recieved %d" % payout)
+        
+        print("Would you like to make a withdrawal?")
+        wth= (input().lower() == "y")
+        if wth:
+            userdata = query("UserInfo", usernd)
+            balance = int(userdata[2][:-1])
+            wth_amnt = int(input("Enter withdrawal amount: "))
+            while(wth_amnt > balance):
+                wth_amnt = int(input("Too much! Your balance is %d. Enter withdrawal amount: " % balance))
+            wth = { "userID": userid,
+                "amount": wth_amnt}
+            query("Withdrawal", wth)
 
         print("Would you like to play again?")
-        sucess = (input().lower() == "y")
+        session = (input().lower() == "y")
