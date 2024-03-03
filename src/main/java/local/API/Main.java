@@ -490,7 +490,7 @@ public class Main {
 			return "200, " +bal+","+userid+";";
 		} catch (SQLException e) {
 				e.printStackTrace();
-				return "400,SQL FAILURE;";
+				return "400,SQL FAILURE ON NAME "+username+"";
 		}
 	}
 }
