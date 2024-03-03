@@ -10,6 +10,10 @@ public class BlackjackLinkedList {
         first = null;
     }
 
+    public BlackjackGame getFirst() {
+        return first;
+    }
+
     public void add(BlackjackGame game) {
         if (first == null) {
             last = game;
