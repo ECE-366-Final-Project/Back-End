@@ -96,6 +96,9 @@ public class Main {
 		} catch (Exception e) {
 			return false;
 		}
+		if (bet <= 0) {
+			return false;
+		}
 		String QUERY = "SELECT balance FROM public.\"user\" WHERE user_id = "+userID+";";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -352,7 +355,7 @@ public class Main {
 	}
 
 	private boolean usernameIsInUse(String username) {
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = "+username+";";
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = \'"+username+"\';";
 		try {
 			// add the username
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -375,7 +378,8 @@ public class Main {
 		if (username.equals("-1")) {
 			return false;
 		}
-		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
+		// https://stackoverflow.com/a/12019115
+		String pattern = "(?=.{2,15}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])";
 		if(!username.matches(pattern)){
 			return false;
 		}
