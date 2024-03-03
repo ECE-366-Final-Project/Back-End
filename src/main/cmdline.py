@@ -6,6 +6,21 @@ import requests
 
 EXIT_CODES = []
 
+def query(func,payload):
+    data = requests.get(head + func, payload)
+    return parse(data)
+
+
+# needed to parse HTTP requests: VERY VERY BAD
+def parse(query_load):
+    str = query_load.text
+    words = str.split(',')
+    if words[0] == "400":
+        raise Exception("Something went wrong: error from API is %s" % words[1])
+    return words
+    #Status code is always first element in word
+
+
 def play_slots(ID,bet):
     multiplier = 0
     ## This is where a request to the server would go
@@ -43,10 +58,15 @@ def play_blackjack(ID,initial_bet):
 ## Stores information about the session, such as userID & other relevant user info
 if __name__ == "__main__":
     username = input("Please enter your username: ")
-    UserId = int(input("Please enter your User ID"))
-
-    balance = 0
-
+    usernd = {"username" : username}
+    userdata = query("UserInfo", usernd)
+    if(userdata[0] == "300"):
+        code = query("CreateUser", usernd)[0]
+        userdata = query("UserInfo", usernd)
+    #Get userID, balance here:
+    userid = int(userdata[1])
+    #messy ahh call but it has to be done
+    balance = int(userdata[2].split(";")[0])
     session = True
     while(session):
         ## Should get user balance here
