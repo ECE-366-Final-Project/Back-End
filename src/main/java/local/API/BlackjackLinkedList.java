@@ -31,6 +31,12 @@ public class BlackjackLinkedList {
         if (game.next != null) {
             game.next.prev = game.prev;
         }
+        if (first == game) {
+            first = game.prev;
+        }
+        if (last == game) {
+            last = game.next;
+        }
         return;
     }
 }
