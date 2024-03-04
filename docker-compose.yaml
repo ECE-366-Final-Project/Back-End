@@ -5,6 +5,8 @@ services:
     volumes:
       - $HOME/srv/postgres:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/payouts_init.sql:/docker-entrypoint-initdb.d/payouts_init.sql
+
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=password

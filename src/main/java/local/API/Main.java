@@ -144,7 +144,7 @@ public class Main {
 
 		// 2. Balance >= Bet
 		if (!isValidBet(userID, bet)) {
-			return "300, INVALID BET;";
+			return "400, INVALID BET;";
 		}
 
 		// 3. Generate Roll
@@ -287,7 +287,7 @@ public class Main {
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(userID_int, game);
-		return "300";
+		return "400, TODO";
 	}
 
 	@GetMapping("/RejoinBlackjack")
@@ -418,7 +418,7 @@ public class Main {
 			return "400, INVALID USER ID;";
 		}
 		if (isValidBet(userID, "0.01")) {
-			return "300, USER BALANCE EXCEEDS 0;";
+			return "400, USER BALANCE EXCEEDS 0;";
 		}
 		String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
 		try {
@@ -437,13 +437,13 @@ public class Main {
 	public String deposit(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
 							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
 		if (!isValidAccount(userID)) {
-			return "300, INVALID USER ID;";
+			return "400, INVALID USER ID;";
 		}
 		double amount;
 		try {
 			amount = Double.parseDouble(depositAmount);
 		} catch (Exception e) {
-			return "300, INVALID AMOUNT;";
+			return "400, INVALID AMOUNT;";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE user_id = "+userID+";";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'DEPOSIT', "+depositAmount+");";
@@ -471,10 +471,10 @@ public class Main {
 		try {
 			amount = Double.parseDouble(withdrawAmount);
 		} catch (Exception e) {
-			return "300, INVALID AMOUNT;";
+			return "400, INVALID AMOUNT;";
 		}
 		if (!isValidBet(userID, withdrawAmount)) {
-			return "300, INSUFFICIENT FUNDS";
+			return "400, INSUFFICIENT FUNDS";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE user_id = "+userID+";";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'WITHDRAWAL', "+withdrawAmount+");";
@@ -499,7 +499,7 @@ public class Main {
 			if(!isValidUsername(username)) {
 				return "400, USERNAME INVALID;";
 			}
-			return "300, USER DOES NOT EXIST;";
+			return "400, USER DOES NOT EXIST;";
 		}
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
