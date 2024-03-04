@@ -72,7 +72,7 @@ public class Main {
 		} catch (Exception e) {
 			return false;
 		}
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+" AND active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -383,7 +383,7 @@ public class Main {
 		if(!username.matches(pattern)){
 			return false;
 		}
-		return true;
+		return !usernameIsInUse(username);
 	}
 
 	@GetMapping("/CreateUser")
@@ -407,17 +407,31 @@ public class Main {
 
 		return "200;";
 	}
-/*
-	@GetMapping("/DeleteUser")
-	public String deleteUser() {
-		return "300";
-	}
 
-	@GetMapping("/UserInfo")
-	public String userInfo() {
-		return "300";
+	// Sets a user to inactive but other API calls don't check if user is active yet
+	@GetMapping("/DeleteUser")
+	public String deleteUser(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
+		if (userID.equals("1")) {
+			return "400, CANNOT DELETE ADMIN ACCOUNT;";
+		}
+		if (!isValidAccount(userID)) {
+			return "400, INVALID USER ID;";
+		}
+		if (isValidBet(userID, "0.01")) {
+			return "400, USER BALANCE EXCEEDS 0;";
+		}
+		String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			conn.close();
+			return "200, DELETION SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
-*/
 
 	@GetMapping("/Deposit")
 	public String deposit(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
@@ -432,11 +446,13 @@ public class Main {
 			return "400, INVALID AMOUNT;";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE user_id = "+userID+";";
-		
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'DEPOSIT', "+depositAmount+");";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
 			return "200, DEPOSIT SUCCESSFUL;";
 		} catch (SQLException e) {
@@ -461,10 +477,13 @@ public class Main {
 			return "400, INSUFFICIENT FUNDS";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE user_id = "+userID+";";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'WITHDRAWAL', "+withdrawAmount+");";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
 			return "200, WITHDRAWAL SUCCESSFUL;";
 		} catch (SQLException e) {
@@ -472,25 +491,24 @@ public class Main {
 			return "500, INTERNAL SERVER ERROR;";
 		}
 	}
-//This should be split into two functions: 1 that returns userid given a username (or nothing)
-// Another that returns balance given a username
+
 	@GetMapping("/UserInfo")
-	public String userInfo( @RequestParam(value="username", defaultValue = "-1") String username) {
-		String QUERY = "SELECT balance, user_id FROM public.\"user\" WHERE username = \'"+ username + "\';";
+	public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
+		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\';";
 		if(!usernameIsInUse(username)){
-			return "300, USER DOES NOT EXIST";
+			return "400, USER DOES NOT EXIST";
 		}
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			rs.next();
-			Double bal = rs.getObject(1) != null ? rs.getDouble(1) : null;
-			String userid = rs.getString(2);
-			return "200, " +bal+","+userid+";";
+			Double bal = rs.getObject("balance") != null ? rs.getDouble(1) : null;
+			int userID = rs.getInt("user_id");
+			return "200, " +bal+", "+userID+";";
 		} catch (SQLException e) {
-				e.printStackTrace();
-				return "400,SQL FAILURE ON NAME "+username+";";
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
 		}
 	}
 }
