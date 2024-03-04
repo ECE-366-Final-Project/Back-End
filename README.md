@@ -38,4 +38,4 @@ $ curl "localhost:<PORT>/<COMMAND>?<param1>=<value>&<param2>=<value>"
 ```
 
 ## Database Schema
-(![Schema](https://github.com/ECE-366-Final-Project/Back-End/assets/60847314/1efa2dac-ede5-491e-9d7c-46460fc67cd2))
+![Schema](https://github.com/ECE-366-Final-Project/Back-End/assets/60847314/1efa2dac-ede5-491e-9d7c-46460fc67cd2)
