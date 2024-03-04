@@ -22,7 +22,7 @@ Ensure that ports `8080` and `5432` are not already bound! <br>
 Run the command line interface by typing
 
 ```
-python3 ./commandline/cmdline.py
+python3 commandline/cmdline_rev2.py
 ```
 
 ## API
