@@ -1,15 +1,20 @@
 version: '3'
 services:
   db:
-    image: postgres:16.1
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_PASSWORD: "gamer"
-    ports:
-      - "5432:5432"
+    image: postgres
     volumes:
-      - "$HOME/srv/postgres:/var/lib/postgresql/data"
+      - $HOME/srv/postgres:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/payouts_init.sql:/docker-entrypoint-initdb.d/payouts_init.sql
+
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=password
+    expose:
+      - "5432"
+    ports:
+      - "0.0.0.0:5432:5432"
+    restart: always
   casino-backend:
     image: eclipse-temurin:latest
     build:
@@ -22,4 +27,5 @@ services:
       - "db"
     environment:
       POSTGRES_DB: "postgres"
-      POSTGRES_PASSWORD: "gamer"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"

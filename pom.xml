@@ -110,7 +110,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-maven-plugin</artifactId>
 			<configuration>
-				<mainClass>local.Demo.DemoAPI</mainClass>
+				<mainClass>local.API.Main</mainClass>
 				<layout>JAR</layout>
 			</configuration>
 			<executions>

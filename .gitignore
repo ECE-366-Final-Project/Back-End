@@ -32,6 +32,8 @@ target/
 .idea/misc.xml
 .idea/remote-targets.xml
 .idea/uiDesigner.xml
+.idea/
+.idea/*
 
 # ignore old files -- look on git if you need them back
 *.old

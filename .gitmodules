@@ -1,0 +1,6 @@
+[submodule "database"]
+	path = database
+	url = git@github.com:ECE-366-Final-Project/database.git
+[submodule "commandline"]
+	path = commandline
+	url = https://github.com/ECE-366-Final-Project/commandline.git

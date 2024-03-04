@@ -80,6 +80,7 @@ public class Slots {
 
     public static Symbol[] playSlots() {
         Symbol[] rolls = getRolls();
+
         return rolls;
     }
 
