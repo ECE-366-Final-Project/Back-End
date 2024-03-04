@@ -57,7 +57,7 @@ public class Main {
 	}
 	@GetMapping("/Ping")
 	public String ping() {
-		return "CooperCasino (Ping: Sucsessful)\n";
+		return "CooperCasino (Ping: Sucessful)\n";
 	}
 
 //	String DB_URL = "jdbc:postgresql://db:5432/postgres";
@@ -144,7 +144,7 @@ public class Main {
 
 		// 2. Balance >= Bet
 		if (!isValidBet(userID, bet)) {
-			return "400, INVALID BET;";
+			return "300, INVALID BET;";
 		}
 
 		// 3. Generate Roll
@@ -366,7 +366,7 @@ public class Main {
 			return rs.getInt(1) > 0;
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return true;
+			return false;
 		}
 	}
 
@@ -418,7 +418,7 @@ public class Main {
 			return "400, INVALID USER ID;";
 		}
 		if (isValidBet(userID, "0.01")) {
-			return "400, USER BALANCE EXCEEDS 0;";
+			return "300, USER BALANCE EXCEEDS 0;";
 		}
 		String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
 		try {
@@ -437,13 +437,13 @@ public class Main {
 	public String deposit(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
 							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
 		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
+			return "300, INVALID USER ID;";
 		}
 		double amount;
 		try {
 			amount = Double.parseDouble(depositAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			return "300, INVALID AMOUNT;";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE user_id = "+userID+";";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'DEPOSIT', "+depositAmount+");";
@@ -471,10 +471,10 @@ public class Main {
 		try {
 			amount = Double.parseDouble(withdrawAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			return "300, INVALID AMOUNT;";
 		}
 		if (!isValidBet(userID, withdrawAmount)) {
-			return "400, INSUFFICIENT FUNDS";
+			return "300, INSUFFICIENT FUNDS";
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE user_id = "+userID+";";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'WITHDRAWAL', "+withdrawAmount+");";
@@ -496,7 +496,10 @@ public class Main {
 	public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
 		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\' AND active = true;";
 		if(!usernameIsInUse(username)){
-			return "400, USER DOES NOT EXIST";
+			if(!isValidUsername(username)) {
+				return "400, USERNAME INVALID;";
+			}
+			return "300, USER DOES NOT EXIST;";
 		}
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
