@@ -494,7 +494,7 @@ public class Main {
 
 	@GetMapping("/UserInfo")
 	public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
-		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\';";
+		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\' AND active = true;";
 		if(!usernameIsInUse(username)){
 			return "400, USER DOES NOT EXIST";
 		}
@@ -503,9 +503,9 @@ public class Main {
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			rs.next();
-			Double bal = rs.getObject("balance") != null ? rs.getDouble(1) : null;
+			Double bal = rs.getDouble("balance");
 			int userID = rs.getInt("user_id");
-			return "200, " +bal+", "+userID+";";
+			return "200, " +userID+", "+bal+";";
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return "500, INTERNAL SERVER ERROR;";
