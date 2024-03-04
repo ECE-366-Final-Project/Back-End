@@ -476,7 +476,7 @@ public class Main {
 // Another that returns balance given a username
 	@GetMapping("/UserInfo")
 	public String userInfo( @RequestParam(value="username", defaultValue = "-1") String username) {
-		String QUERY = "SELECT balance, user_id FROM public.\"user\" WHERE username =" + username + ";";
+		String QUERY = "SELECT balance, user_id FROM public.\"user\" WHERE username = \'"+ username + "\';";
 		if(!usernameIsInUse(username)){
 			return "300, USER DOES NOT EXIST";
 		}
@@ -490,7 +490,7 @@ public class Main {
 			return "200, " +bal+","+userid+";";
 		} catch (SQLException e) {
 				e.printStackTrace();
-				return "400,SQL FAILURE ON NAME "+username+"";
+				return "400,SQL FAILURE ON NAME "+username+";";
 		}
 	}
 }
