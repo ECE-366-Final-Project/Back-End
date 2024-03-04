@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
+import local.API.BlackjackLinkedList;
 
 import java.util.HashMap;
 import java.util.Optional;
@@ -64,8 +65,14 @@ public class Main {
 //	String PASS = "password";
 
 
-	private boolean isValidAccount(int userID) {
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+";";
+	private boolean isValidAccount(String userID_string) {
+		int userID;
+		try {
+			userID = Integer.parseInt(userID_string);
+		} catch (Exception e) {
+			return false;
+		}
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+" AND active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -80,7 +87,18 @@ public class Main {
 		return false;
 	}
 
-	private boolean isValidBet(int userID, double bet) {
+	private boolean isValidBet(String userID_string, String bet_string) {
+		int userID;
+		double bet;
+		try {
+			userID = Integer.parseInt(userID_string);
+			bet = Double.parseDouble(bet_string);
+		} catch (Exception e) {
+			return false;
+		}
+		if (bet <= 0) {
+			return false;
+		}
 		String QUERY = "SELECT balance FROM public.\"user\" WHERE user_id = "+userID+";";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -120,12 +138,12 @@ public class Main {
 							@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 
 		// 1. Is Valid Account
-		if (!isValidAccount(Integer.parseInt(userID))) {
+		if (!isValidAccount(userID)) {
 			return "400, INVALID USER ID;";
 		}
 
 		// 2. Balance >= Bet
-		if (!isValidBet(Integer.parseInt(userID), Double.parseDouble(bet))) {
+		if (!isValidBet(userID, bet)) {
 			return "400, INVALID BET;";
 		}
 
@@ -137,7 +155,13 @@ public class Main {
 		if (payout < 0) {
 			return "400, INVALID PAYOUT;";
 		}
-		double winnings = Double.parseDouble(bet) * payout;
+		double winnings;
+		try {
+			winnings = Double.parseDouble(bet) * payout;
+		} catch (Exception e) {
+			deposit(userID, bet);
+			return "500, INTERNAL SERVER ERROR;";
+		}
 
 		// 5. Update Database (userBalance, slotsHistory)...		
 		String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE user_id = "+userID+";";
@@ -149,7 +173,7 @@ public class Main {
 			stmt.executeUpdate(QUERY_user);
 			stmt.executeUpdate(QUERY_slots);
 			conn.close();
-			return "200,"+winnings+", "+payout+", "+payout_id+";";
+			return "200, "+winnings+", "+payout+", "+payout_id+";";
 		} catch (SQLException e) {
 			e.printStackTrace();
 			// return "400";
@@ -158,7 +182,7 @@ public class Main {
 	}
 
 	private boolean hasActiveGame(int userID) {
-		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE active = true;";
+		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE active = true AND user_id = "+userID+";";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -188,24 +212,25 @@ public class Main {
 		return false;
 	}
 
-	LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
+	BlackjackLinkedList cachedBlackjackGames = new BlackjackLinkedList();
 	HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
 
 	@GetMapping("/NewBlackjack")
 	public String newBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
 								@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 		// 1. Is Valid Account
-		if (!isValidAccount(Integer.parseInt(userID))) {
+		if (!isValidAccount(userID)) {
 			return "400, INVALID USER ID;";
 		}
 		// 2. Balance >= Bet
-		if (!isValidBet(Integer.parseInt(userID), Double.parseDouble(bet))) {
+		if (!isValidBet(userID, bet)) {
 			return "400, INVALID BET;";
 		}
 		// 3. Check if user has active game
 		if (!hasActiveGame(Integer.parseInt(userID))) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
-			BlackjackGame game = new BlackjackGame(Integer.parseInt(userID), Optional.empty(),  Optional.empty(),  Optional.empty());
+			BlackjackGame game = new BlackjackGame(Integer.parseInt(userID), Optional.empty(),  Optional.empty(),  Optional.empty(), Double.parseDouble(bet));
 			cachedBlackjackGames.add(game);
 			activeGameLookup.put(Integer.parseInt(userID), game);
 			// Insert game into "blackjack" table of database
@@ -223,20 +248,126 @@ public class Main {
 	@GetMapping("/UpdateBlackjack")
 	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
 									@RequestParam(value = "move", defaultValue = "-1") String move) {
-		BlackjackGame game = activeGameLookup.get(Integer.parseInt(userID));
+		int userID_int;
+		try {
+			userID_int = Integer.parseInt(userID);
+		} catch (Exception e) {
+			return "400, INVALID USER ID;";
+		}
+		BlackjackGame game = activeGameLookup.get(userID_int);
 		if (game == null) {
 			// check database
+			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+			try {
+				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(QUERY_check);
+				rs.next();
+				if (rs.getInt(1) == 0) {
+					return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
+				}
+				Statement stmt2 = conn.createStatement();
+				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
+				rs2.next();
+				game = new BlackjackGame(	userID_int, 
+											Optional.of(rs.getString("deck")), 
+											Optional.of(rs.getString("player_hand")),
+											Optional.of(rs.getString("dealer_hand")),
+											rs.getDouble("bet"));
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+				return "500, INTERNAL SERVER ERROR";
+			}
+		} else {
+			cachedBlackjackGames.remove(game);
+		}
+		// resolve blackjack logic on game
+		game.resetTimeToKill();
+		cachedBlackjackGames.add(game);
+		activeGameLookup.put(userID_int, game);
+		return "300";
+	}
+
+	@GetMapping("/RejoinBlackjack")
+	public String rejoinBlackjack(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
+		int userID_int;
+		try {
+			userID_int = Integer.parseInt(userID);
+		} catch (Exception e) {
+			return "400, INVALID USER ID;";
+		}
+		BlackjackGame game = activeGameLookup.get(userID_int);
+		if (game == null) {
+			// check database
+			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+			try {
+				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(QUERY_check);
+				rs.next();
+				if (rs.getInt(1) == 0) {
+					return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
+				}
+				Statement stmt2 = conn.createStatement();
+				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
+				rs2.next();
+				game = new BlackjackGame(	userID_int, 
+											Optional.of(rs.getString("deck")), 
+											Optional.of(rs.getString("player_hand")),
+											Optional.of(rs.getString("dealer_hand")),
+											rs.getDouble("bet"));
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+				return "500, INTERNAL SERVER ERROR";
+			}
+
 		} else {
 			cachedBlackjackGames.remove(game);
 		}
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
-		return "300";
+		activeGameLookup.put(userID_int, game);
+		return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
 	}
 
-	@GetMapping("/RejoinBlackjack")
-	public String rejoinBlackjack() {
-		return "300";
+	private int resolveTimeToLive() {
+		BlackjackGame game = cachedBlackjackGames.getFirst();
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			while (game != null && (!game.isAlive())) {
+				cachedBlackjackGames.remove(game);
+				activeGameLookup.remove(game.userID);
+				String QUERY = "INSERT INTO public.\"active_blackjack_games\" (user_id, bet, deck, player_hand, dealer_hand) VALUES ("+game.userID+", "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
+				Statement stmt = conn.createStatement();
+				stmt.executeUpdate(QUERY);
+				game = cachedBlackjackGames.getFirst();
+			}
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return 1;
+		}
+		return 0;
+	}
+
+	private boolean usernameIsInUse(String username) {
+		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = \'"+username+"\';";
+		try {
+			// add the username
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			conn.close();
+			return rs.getInt(1) > 0;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return true;
+		}
 	}
 
 	// Returns whether a given username is valid for user-creation or not
@@ -247,24 +378,12 @@ public class Main {
 		if (username.equals("-1")) {
 			return false;
 		}
-		String pattern= "^[0-9]*[a-zA-Z][a-zA-Z0-9]*$";
+		// https://stackoverflow.com/a/12019115
+		String pattern = "(?=.{2,15}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])";
 		if(!username.matches(pattern)){
 			return false;
 		}
-		//finally, check if this exists in db
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE username = "+username+";";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			int count = rs.getInt(1);
-			conn.close();
-			return (count == 0);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return false;
+		return !usernameIsInUse(username);
 	}
 
 	@GetMapping("/CreateUser")
@@ -288,32 +407,109 @@ public class Main {
 
 		return "200;";
 	}
-/*
+
+	// Sets a user to inactive but other API calls don't check if user is active yet
 	@GetMapping("/DeleteUser")
-	public String rejoinBlackjack() {
-		return "300";
+	public String deleteUser(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
+		if (userID.equals("1")) {
+			return "400, CANNOT DELETE ADMIN ACCOUNT;";
+		}
+		if (!isValidAccount(userID)) {
+			return "400, INVALID USER ID;";
+		}
+		if (isValidBet(userID, "0.01")) {
+			return "400, USER BALANCE EXCEEDS 0;";
+		}
+		String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			conn.close();
+			return "200, DELETION SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
 
-	@GetMapping("/UserInfo")
-	public String rejoinBlackjack() {
-		return "300";
-	}
-*/
-
-/*
 	@GetMapping("/Deposit")
-	public String rejoinBlackjack() {
-		return "300";
+	public String deposit(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
+							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
+		if (!isValidAccount(userID)) {
+			return "400, INVALID USER ID;";
+		}
+		double amount;
+		try {
+			amount = Double.parseDouble(depositAmount);
+		} catch (Exception e) {
+			return "400, INVALID AMOUNT;";
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE user_id = "+userID+";";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'DEPOSIT', "+depositAmount+");";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			return "200, DEPOSIT SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
 
 	@GetMapping("/Withdraw")
-	public String rejoinBlackjack() {
-		return "300";
+	public String withdraw(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
+							@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
+		if (!isValidAccount(userID)) {
+			return "400, INVALID USER ID;";
+		}
+		double amount;
+		try {
+			amount = Double.parseDouble(withdrawAmount);
+		} catch (Exception e) {
+			return "400, INVALID AMOUNT;";
+		}
+		if (!isValidBet(userID, withdrawAmount)) {
+			return "400, INSUFFICIENT FUNDS";
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE user_id = "+userID+";";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'WITHDRAWAL', "+withdrawAmount+");";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			return "200, WITHDRAWAL SUCCESSFUL;";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
-*/
+
 	@GetMapping("/UserInfo")
-	public String userInfo() {
-		return "300";
+	public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
+		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\';";
+		if(!usernameIsInUse(username)){
+			return "400, USER DOES NOT EXIST";
+		}
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double bal = rs.getObject("balance") != null ? rs.getDouble(1) : null;
+			int userID = rs.getInt("user_id");
+			return "200, " +bal+", "+userID+";";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return "500, INTERNAL SERVER ERROR;";
+		}
 	}
 }
 
