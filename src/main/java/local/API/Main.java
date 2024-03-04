@@ -389,7 +389,7 @@ public class Main {
 	@GetMapping("/CreateUser")
 	public String createUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
 		if(!isValidUsername(username)) {
-			return "400, INVALID USERNAME. DB UNCHANGED.";
+			return "400, INVALID USERNAME;";
 		}
 
 		// we have a valid username.
@@ -402,7 +402,7 @@ public class Main {
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR";
+			return "500, INTERNAL SERVER ERROR;";
 		}
 
 		return "200;";
