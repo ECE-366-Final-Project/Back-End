@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 public class WithdrawalTest {
 
     private Account sender;
+	private Withdrawal withdrawal;
 
     @BeforeEach
     public void setUp() {
