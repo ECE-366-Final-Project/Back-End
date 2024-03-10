@@ -60,11 +60,6 @@ public class Main {
 		return "CooperCasino (Ping: Sucessful)\n";
 	}
 
-//	String DB_URL = "jdbc:postgresql://db:5432/postgres";
-//	String USER = "postgres";
-//	String PASS = "password";
-
-
 	private boolean isValidAccount(String userID_string) {
 		int userID;
 		try {
@@ -241,9 +236,6 @@ public class Main {
 		}
 		return "400, GAME ALREADY IN PROGRESS;";
 	}
-
-	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
-	// HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
 
 	@GetMapping("/UpdateBlackjack")
 	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
