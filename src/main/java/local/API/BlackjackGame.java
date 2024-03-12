@@ -12,7 +12,7 @@ public class BlackjackGame {
     Random rand = new Random();
 
     private long timeToKill_SECONDS = 0;
-    public final int userID;
+    public final String username;
     public final double bet;
     private String deck;
     private String playersCards;
@@ -21,10 +21,10 @@ public class BlackjackGame {
     public BlackjackGame next;
     public BlackjackGame prev;
 
-    public BlackjackGame(int userID, Optional<String> deck, Optional<String> playersCards, Optional<String> dealersCards, double bet) {
+    public BlackjackGame(String username, Optional<String> deck, Optional<String> playersCards, Optional<String> dealersCards, double bet) {
         // If not provided with deck, playersCards AND dealersCards, the constructor will reset the game
         timeToKill_SECONDS = (System.currentTimeMillis() / 1000L) + TIME_TO_LIVE_SECONDS;
-        this.userID = userID;
+        this.username = username;
         this.bet = bet;
         if (deck.isPresent() && playersCards.isPresent() && dealersCards.isPresent()) {
             this.deck = deck.get();
