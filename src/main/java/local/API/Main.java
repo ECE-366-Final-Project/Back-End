@@ -64,6 +64,7 @@ public class Main {
 //	String USER = "postgres";
 //	String PASS = "password";
 
+	HashMap<String, String> cachedSessionTokens = new HashMap<String, String>();
 
 	private boolean isValidAccount(String userID_string) {
 		int userID;
