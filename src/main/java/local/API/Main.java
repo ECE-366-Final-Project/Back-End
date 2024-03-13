@@ -12,6 +12,12 @@ import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
 import local.API.BlackjackLinkedList;
 
+import org.json.JSONObject;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.LinkedList;
@@ -71,12 +77,16 @@ public class Main {
 
 	// ping api
 	@GetMapping("/Status")
-	public String status() {
-		return "CooperCasino (Status: Online)\n";
+	public ResponseEntity<String> status() {
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "CooperCasino (Status: Online)");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 	@GetMapping("/Ping")
-	public String ping() {
-		return "CooperCasino (Ping: Sucessful)\n";
+	public ResponseEntity<String> ping() {
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "CooperCasino (Ping: Sucessful)");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
     private boolean isValidAccount(String token) {
@@ -116,19 +126,23 @@ public class Main {
 	}
 
 	@GetMapping("/PlaySlots")
-	public String playSlots(@RequestParam(value = "token", defaultValue = "") String token,
-							@RequestParam(value = "bet", defaultValue = "-1") String bet) {
+	public ResponseEntity<String> playSlots(@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 
 		// 1. Is Valid Account
 		if (!isValidAccount(token)) {
-			return "400, INVALID SESSION, TRY LOGGING IN;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
         String username = cachedSessionTokens.get(token);
 
 		// 2. Balance >= Bet
 		if (!isValidBet(username, bet)) {
-			return "400, INVALID BET;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		// 3. Generate Roll
@@ -137,14 +151,17 @@ public class Main {
 		// 4. Get Payout And Winnings From DB
 		double payout = getPayout(payout_id);
 		if (payout < 0) {
-			return "500, INTERNAL SERVER ERROR, INVALID PAYOUT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: INVALID PAYOUT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		double winnings;
 		try {
 			winnings = Double.parseDouble(bet) * payout;
 		} catch (Exception e) {
-			deposit(username, bet);
-			return "500, INTERNAL SERVER ERROR, BET RETURNED;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT PARSE BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		// 5. Update Database (userBalance, slotsHistory)...		
@@ -157,10 +174,17 @@ public class Main {
 			stmt.executeUpdate(QUERY_user);
 			stmt.executeUpdate(QUERY_slots);
 			conn.close();
-			return "200, "+winnings+", "+payout+", "+payout_id+";";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "SLOTS GAME SUCCESSFUL");
+			jo.put("winnings", winnings);
+			jo.put("payout", payout);
+			jo.put("payout_id", payout_id);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-            return "500, Internal Server Error";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -199,18 +223,22 @@ public class Main {
 	HashMap<String, BlackjackGame> activeGameLookup = new HashMap<String, BlackjackGame>();
 
 	@GetMapping("/NewBlackjack")
-	public String newBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
-								@RequestParam(value = "bet", defaultValue = "-1") String bet) {
+	public ResponseEntity<String> newBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
+												@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 		// 1. Is Valid Account
 		if (!isValidAccount(token)) {
-			return "400, INVALID SESSION, TRY LOGGING IN;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
         String username = cachedSessionTokens.get(token);
 
 		// 2. Balance >= Bet
 		if (!isValidBet(username, bet)) {
-			return "400, INVALID BET;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		// 3. Check if user has active game
@@ -221,11 +249,21 @@ public class Main {
 			activeGameLookup.put(username, game);
 			// Insert game into "blackjack" table of database
 			if (insertBlackjackGameDB(game)) {
-				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "CREATION OF NEW BLACKJACK GAME SUCCESSFUL");
+				jo.put("players_cards", game.getPlayersCards());
+				jo.put("dealers_cards", game.getDealersCards().substring(0, 2));
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 			}
-			return "400, ERROR INSERTING INTO DATABSE;";
+
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE INSERTION ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return "400, GAME ALREADY IN PROGRESS;";
+
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "BLACKJACK GAME ALREADY IN PROGRESS");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 	}
 
 	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
@@ -390,37 +428,50 @@ public class Main {
     }
 
 	@GetMapping("/LogIn")
-	public String logIn(@RequestParam(value = "username", defaultValue = "-1") String username,
-						@RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
+	public ResponseEntity<String> logIn(@RequestParam(value = "username", defaultValue = "-1") String username,
+										@RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
+
 		String QUERY = "SELECT passkey FROM public.\"user\" WHERE username = \'"+username+"\';";
+
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			rs.next();
 			if (!rs.getString(1).equals(passkey)) {
-				return "400, INVALID USERNAME OR PASSWORD;";
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 			}
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		try {
 			String hash = toHexString(getSHA(username+API_SESSION_SALT));
 			cachedSessionTokens.put(hash, username);
-			return hash;
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "LOG IN SUCCESSFUL");
+			jo.put("token", hash);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (Exception e) {
-			return "500, INTERNAL SERVER ERROR 2;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT CREATE SESSION TOKEN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	@GetMapping("/CreateUser")
-	public String createUser(   @RequestParam(value = "username", defaultValue = "-1") String username,
-                                @RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
+	public ResponseEntity<String> createUser(   @RequestParam(value = "username", defaultValue = "-1") String username,
+                                				@RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
 		if(!isValidUsername(username)) {
-			return "400, INVALID USERNAME;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID USERNAME");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		// we have a valid username.
@@ -433,42 +484,23 @@ public class Main {
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
-		return "200;";
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "ACCOUNT CREATION SUCCESSFUL");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
-	// Sets a user to inactive but other API calls don't check if user is active yet
-	// @GetMapping("/DeleteUser")
-	// public String deleteUser(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
-	// 	if (userID.equals("1")) {
-	// 		return "400, CANNOT DELETE ADMIN ACCOUNT;";
-	// 	}
-	// 	if (!isValidAccount(userID)) {
-	// 		return "400, INVALID USER ID;";
-	// 	}
-	// 	if (isValidBet(userID, "0.01")) {
-	// 		return "400, USER BALANCE EXCEEDS 0;";
-	// 	}
-	// 	String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
-	// 	try {
-	// 		Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-	// 		Statement stmt = conn.createStatement();
-	// 		stmt.executeUpdate(QUERY);
-	// 		conn.close();
-	// 		return "200, DELETION SUCCESSFUL;";
-	// 	} catch (SQLException e) {
-	// 		e.printStackTrace();
-	// 		return "500, INTERNAL SERVER ERROR;";
-	// 	}
-	// }
-
 	@GetMapping("/Deposit")
-	public String deposit(	@RequestParam(value = "token", defaultValue = "") String token,
-							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
+	public ResponseEntity<String> deposit(	@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
 		if (!isValidAccount(token)) {
-			return "400, INVALID SESSION, TRY LOGGING IN;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
         String username = cachedSessionTokens.get(token);
@@ -477,7 +509,9 @@ public class Main {
 		try {
 			amount = Double.parseDouble(depositAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE username = \'"+username+"\';";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'DEPOSIT', "+depositAmount+");";
@@ -488,18 +522,24 @@ public class Main {
 			Statement stmt2 = conn.createStatement();
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
-			return "200, DEPOSIT SUCCESSFUL;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "DEPOSIT SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	@GetMapping("/Withdraw")
-	public String withdraw(	@RequestParam(value = "token", defaultValue = "") String token,
-							@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
+	public ResponseEntity<String> withdraw(	@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
 		if (!isValidAccount(token)) {
-			return "400, INVALID SESSION, TRY LOGGING IN;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
         String username = cachedSessionTokens.get(token);
@@ -508,10 +548,14 @@ public class Main {
 		try {
 			amount = Double.parseDouble(withdrawAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		if (!isValidBet(username, withdrawAmount)) {
-			return "400, INSUFFICIENT FUNDS";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INSUFFICIENT FUNDS");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = \'"+username+"\';";
 		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'WITHDRAWAL', "+withdrawAmount+");";
@@ -522,35 +566,16 @@ public class Main {
 			Statement stmt2 = conn.createStatement();
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
-			return "200, WITHDRAWAL SUCCESSFUL;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "WITHDRAWAL SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-
-	// @GetMapping("/UserInfo")
-	// public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
-	// 	String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\' AND active = true;";
-	// 	if(!usernameIsInUse(username)){
-	// 		if(!isValidUsername(username)) {
-	// 			return "400, USERNAME INVALID;";
-	// 		}
-	// 		return "400, USER DOES NOT EXIST;";
-	// 	}
-	// 	try {
-	// 		Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-	// 		Statement stmt = conn.createStatement();
-	// 		ResultSet rs = stmt.executeQuery(QUERY);
-	// 		rs.next();
-	// 		Double bal = rs.getDouble("balance");
-	// 		int userID = rs.getInt("user_id");
-	// 		return "200, " +userID+", "+bal+";";
-	// 	} catch (SQLException e) {
-	// 		e.printStackTrace();
-	// 		return "500, INTERNAL SERVER ERROR;";
-	// 	}
-	// }
 }
 
 // PARAM FORMATING 
