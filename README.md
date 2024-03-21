@@ -9,21 +9,7 @@ $ git clone --recurse-submodules https://github.com/ECE-366-Final-Project/Back-E
 ```
 
 ## Build & Run  
-Dependencies:  
-Make sure that docker and docker-compose are installed  
-[See the Docker docs for instructions!!!!!!!!!!](https://docs.docker.com/compose/install/linux/)
-
-Build and initialize the project with <br>
-```
-$ docker compose up --build -d
-```
-Ensure that ports `8080` and `5432` are not already bound! <br>
-
-Run the command line interface by typing
-
-```
-python3 commandline/cmdline_rev2.py
-```
+Don't build from here! see ![our monorepo](https://github.com/ECE-366-Final-Project/monorepo)
 
 ## API
 Sample ping request (Default port is `8080`)        <br>
