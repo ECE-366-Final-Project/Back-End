@@ -7,7 +7,7 @@ public class BlackjackGame {
 
     final private static int TIME_TO_LIVE_SECONDS = 240;
 
-    final private static String NEW_DECK = "AH2H3H4H5H6H7H8H9HJHQHKHAC2C3C4C5C6C7C8C9CJCQCKCAD2D3D4D5D6D7D8D9DJDQDKDAS2S3S4S5S6S7S8S9SJSQSKS";
+    final private static String NEW_DECK = "AH2H3H4H5H6H7H8H9H1HJHQHKHAC2C3C4C5C6C7C8C9C1CJCQCKCAD2D3D4D5D6D7D8D9D1DJDQDKDAS2S3S4S5S6S7S8S9S1SJSQSKS";
 
     Random rand = new Random();
 
@@ -59,13 +59,23 @@ public class BlackjackGame {
         timeToKill_SECONDS = (System.currentTimeMillis() / 1000L) + TIME_TO_LIVE_SECONDS;
     }
 
-    public void shuffleDeck() { // TODO : MAKE IT SHUFFLE PAIRS OF CHARACTERS
+    
+    public void shuffleDeck() {
         char[] charArr = deck.toCharArray();
-        for (int i = 0; i < deck.length(); i++) {
-            char temp = charArr[i];
-            int r = rand.nextInt(deck.length());
-            charArr[i] = charArr[r];
-            charArr[r] = charArr[i];
+        int r;
+        char tempRank, tempSuit;
+        for (int i = 0; i < deck.length()/2; i++) {
+
+            tempRank = charArr[2*i];
+            tempSuit = charArr[2*i+1];
+
+            r = rand.nextInt(deck.length()/2);
+
+            charArr[2*i] = charArr[2*r];
+            charArr[2*i+1] = charArr[2*r+1];
+
+            charArr[2*r] = tempRank;
+            charArr[2*r+1] = tempSuit;
         }
         deck = new String(charArr);
     }
