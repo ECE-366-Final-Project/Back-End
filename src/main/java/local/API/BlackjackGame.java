@@ -11,6 +11,8 @@ public class BlackjackGame {
 
     Random rand = new Random();
 
+    private static final int DEALER_MIN_STAND = 17;
+
     private long timeToKill_SECONDS = 0;
     public final String username;
     public final double bet;
@@ -35,13 +37,76 @@ public class BlackjackGame {
         resetGame();
     }
 
-    private String deal(int size) {
+    public String deal(int size) {
         if (2*size > deck.length()) {
             return null;
         }
         String cards = deck.substring(0, 2*size);
         deck = deck.substring(2*size);
         return cards;
+    }
+
+    public String dealPlayer(int size) {
+        String card = deal(1);
+        playersCards += card;
+        return card;
+    }
+
+    private static int valueOf(char rank) {
+        switch (rank) {
+            case '2':
+                return 2;
+            case '3':
+                return 3;
+            case '4':
+                return 4;
+            case '5':
+                return 5;
+            case '6':
+                return 6;
+            case '7':
+                return 7;
+            case '8':
+                return 8;
+            case '9':
+                return 9;
+            case '1':
+                return 10;
+            case 'J':
+                return 10;
+            case 'Q':
+                return 10;
+            case 'K':
+                return 10;
+            default:
+                return 0;
+        }
+    }
+
+    public static int getScore(String hand) {
+        int score = 0;
+        int aceCount = 0;
+        for (int i = 0; i < hand.length(); i += 2) {
+            char rank = hand.charAt(i);
+            if (rank != 'A') {
+                score += valueOf(rank);
+            } else {
+                aceCount++;
+            }
+        }
+        score += 11*aceCount;
+        while (score > 21 && aceCount > 0) {
+            score -= 10;
+            aceCount--;
+        }
+        return score;
+    }
+
+    public int resolveDealersHand() {
+        while (getScore(dealersCards) < DEALER_MIN_STAND) {
+            dealersCards += deal(1);
+        }
+        return getScore(dealersCards);
     }
 
     private void resetGame() {

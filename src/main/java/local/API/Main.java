@@ -1,4 +1,3 @@
-// Demo API Skeleton, James Ryan
 // GPL v3
 
 package local.API;
@@ -189,7 +188,7 @@ public class Main {
 	}
 
 	private boolean hasActiveGame(String username) {
-		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE username = \'"+username+"\';";
+		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE username = \'"+username+"\' AND active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -205,7 +204,7 @@ public class Main {
 	}
 
 	private boolean insertBlackjackGameDB(BlackjackGame game) {
-		String QUERY = "INSERT INTO public.\"blackjack\" (username, bet, player_hand, dealer_hand) VALUES ("+game.username+", "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
+		String QUERY = "INSERT INTO public.\"blackjack\" (username, bet, player_hand, dealer_hand) VALUES (\'"+game.username+"\', "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -245,17 +244,32 @@ public class Main {
 		if (!hasActiveGame(username)) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
 			BlackjackGame game = new BlackjackGame(username, Optional.empty(),  Optional.empty(),  Optional.empty(), Double.parseDouble(bet));
-			cachedBlackjackGames.add(game);
-			activeGameLookup.put(username, game);
 			// Insert game into "blackjack" table of database
 			if (insertBlackjackGameDB(game)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "CREATION OF NEW BLACKJACK GAME SUCCESSFUL");
 				jo.put("players_cards", game.getPlayersCards());
 				jo.put("dealers_cards", game.getDealersCards().substring(0, 2));
+				if (game.getScore(game.getPlayersCards()) == 21) {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", 21);
+					jo.put("GAME_RESULT", "BLACKJACK");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", 2.5);
+					ResponseEntity<String> depositResult = deposit(token, Double.toString(game.bet*2.5));
+					if (depositResult.getStatusCode() != HttpStatus.OK) {
+						return depositResult;
+					}
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+				}
+				jo.put("GAME_ENDED", "false");
+				jo.put("PLAYER_SCORE", playerScore);
+				cachedBlackjackGames.add(game);
+				activeGameLookup.put(username, game);
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 			}
-
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE INSERTION ERROR");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -270,11 +284,13 @@ public class Main {
 	// HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
 
 	@GetMapping("/UpdateBlackjack")
-	public String updateBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
-									@RequestParam(value = "move", defaultValue = "-1") String move) {
+	public ResponseEntity<String> updateBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
+														@RequestParam(value = "move", defaultValue = "-1") String move) {
         // 1. Is Valid Account
 		if (!isValidAccount(token)) {
-			return "400, INVALID SESSION, TRY LOGGING IN;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
         String username = cachedSessionTokens.get(token);
@@ -290,7 +306,9 @@ public class Main {
 				ResultSet rs = stmt.executeQuery(QUERY_check);
 				rs.next();
 				if (rs.getInt(1) == 0) {
-					return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "400, USER DOES NOT HAVE ANY ACTIVE GAMES");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 				}
 				Statement stmt2 = conn.createStatement();
 				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
@@ -303,61 +321,89 @@ public class Main {
 				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
-				return "500, INTERNAL SERVER ERROR";
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		} else {
 			cachedBlackjackGames.remove(game);
 		}
-		// resolve blackjack logic on game
+		JSONObject jo = new JSONObject();
+		double payout = -1.0;
+		int playerScore;
+		switch (move) {
+			case "hit":
+				game.dealPlayer(1);
+				playerScore = game.getScore(game.getPlayersCards());
+				if (playerScore > 21) {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", game.getScore(game.getDealersCards()));
+					jo.put("GAME_RESULT", "BUST");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				} else {
+					jo.put("GAME_ENDED", "false");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
+				}
+				break;
+			case "stand":
+				playerScore = game.getScore(game.getPlayersCards());
+				int dealerScore = game.resolveDealersHand();
+				String dealersCards = game.getDealersCards();
+				if (dealerScore > 21 || playerScore > dealerScore) {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DEALER_BUST");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(2.0));
+					payout = 2.0;
+				} else if (playerScore == dealerScore) {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "TIE");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "PUSH");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(1.0));
+					payout = 1.0;
+				} else {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DEALER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				}
+				break;
+			default:
+				jo.put("MESSAGE", "INVALID ACTION");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
+		}
+		if (payout > 0) {
+			ResponseEntity<String> depositResult = deposit(token, Double.toString(game.bet*payout));
+			if (depositResult.getStatusCode() != HttpStatus.OK) {
+				return depositResult;
+			}
+		}
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
-		return "400, TODO, ADD ACTUAL BLACKJACK LOGIC";
+		jo.put("MESSAGE", "GAME UPDATED");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
-
-	// @GetMapping("/RejoinBlackjack")
-	// public String rejoinBlackjack(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
-	// 	int userID_int;
-	// 	try {
-	// 		userID_int = Integer.parseInt(userID);
-	// 	} catch (Exception e) {
-	// 		return "400, INVALID USER ID;";
-	// 	}
-	// 	BlackjackGame game = activeGameLookup.get(userID_int);
-	// 	if (game == null) {
-	// 		// check database
-	// 		String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
-	// 		String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
-	// 		try {
-	// 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-	// 			Statement stmt = conn.createStatement();
-	// 			ResultSet rs = stmt.executeQuery(QUERY_check);
-	// 			rs.next();
-	// 			if (rs.getInt(1) == 0) {
-	// 				return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
-	// 			}
-	// 			Statement stmt2 = conn.createStatement();
-	// 			ResultSet rs2 = stmt2.executeQuery(QUERY_get);
-	// 			rs2.next();
-	// 			game = new BlackjackGame(	userID_int, 
-	// 										Optional.of(rs.getString("deck")), 
-	// 										Optional.of(rs.getString("player_hand")),
-	// 										Optional.of(rs.getString("dealer_hand")),
-	// 										rs.getDouble("bet"));
-	// 			conn.close();
-	// 		} catch (SQLException e) {
-	// 			e.printStackTrace();
-	// 			return "500, INTERNAL SERVER ERROR";
-	// 		}
-
-	// 	} else {
-	// 		cachedBlackjackGames.remove(game);
-	// 	}
-	// 	game.resetTimeToKill();
-	// 	cachedBlackjackGames.add(game);
-	// 	activeGameLookup.put(userID_int, game);
-	// 	return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
-	// }
 
 	private int resolveTimeToLive() {
 		BlackjackGame game = cachedBlackjackGames.getFirst();
