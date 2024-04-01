@@ -240,6 +240,11 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
+		ResponseEntity<String> withdrawResult = withdraw(token, bet);
+		if (withdrawResult.getStatusCode() != HttpStatus.OK) {
+			return withdrawResult;
+		}
+
 		// 3. Check if user has active game
 		if (!hasActiveGame(username)) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
@@ -265,7 +270,7 @@ public class Main {
 					return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 				}
 				jo.put("GAME_ENDED", "false");
-				jo.put("PLAYER_SCORE", playerScore);
+				jo.put("PLAYER_SCORE", game.getScore(game.getPlayersCards()));
 				cachedBlackjackGames.add(game);
 				activeGameLookup.put(username, game);
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
@@ -285,7 +290,7 @@ public class Main {
 
 	@GetMapping("/UpdateBlackjack")
 	public ResponseEntity<String> updateBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
-														@RequestParam(value = "move", defaultValue = "-1") String move) {
+													@RequestParam(value = "move", defaultValue = "-1") String move) {
         // 1. Is Valid Account
 		if (!isValidAccount(token)) {
 			JSONObject jo = new JSONObject();
@@ -328,6 +333,7 @@ public class Main {
 		} else {
 			cachedBlackjackGames.remove(game);
 		}
+		activeGameLookup.remove(game.username);
 		JSONObject jo = new JSONObject();
 		double payout = -1.0;
 		int playerScore;
@@ -392,12 +398,27 @@ public class Main {
 				jo.put("MESSAGE", "INVALID ACTION");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 		}
-		if (payout > 0) {
+		if (payout >= 0) {
 			ResponseEntity<String> depositResult = deposit(token, Double.toString(game.bet*payout));
 			if (depositResult.getStatusCode() != HttpStatus.OK) {
 				return depositResult;
 			}
+			try {
+				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				String QUERY = "UPDATE public.\"blackjack\" SET bet = "+game.bet+", winnings = "+Double.toString(game.bet*payout)+", active = false, player_hand = \'"+game.getPlayersCards()+"\', dealer_hand = \'"+game.getDealersCards()+"\' WHERE blackjack_game_id IN (SELECT blackjack_game_id FROM public.\"blackjack\" WHERE username = \'"+game.username+"\' AND active = true ORDER BY blackjack_game_id DESC LIMIT 1 FOR UPDATE);";
+				Statement stmt = conn.createStatement();
+				stmt.executeUpdate(QUERY);
+				game = cachedBlackjackGames.getFirst();
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+				jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT STORE GAME INTO DATABASE");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		}
+		activeGameLookup.put(game.username, game);
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
@@ -412,7 +433,7 @@ public class Main {
 			while (game != null && (!game.isAlive())) {
 				cachedBlackjackGames.remove(game);
 				activeGameLookup.remove(game.username);
-				String QUERY = "INSERT INTO public.\"active_blackjack_games\" (username, bet, deck, player_hand, dealer_hand) VALUES ("+game.username+", "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
+				String QUERY = "INSERT INTO public.\"active_blackjack_games\" (username, bet, deck, player_hand, dealer_hand) VALUES ("+game.username+", "+game.bet+", \'"+game.getDeck()+"\', \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 				Statement stmt = conn.createStatement();
 				stmt.executeUpdate(QUERY);
 				game = cachedBlackjackGames.getFirst();
@@ -505,6 +526,7 @@ public class Main {
 			jo.put("token", hash);
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (Exception e) {
+			e.printStackTrace();
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT CREATE SESSION TOKEN");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
