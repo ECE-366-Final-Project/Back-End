@@ -267,6 +267,19 @@ public class Main {
 					if (depositResult.getStatusCode() != HttpStatus.OK) {
 						return depositResult;
 					}
+					try {
+						Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+						String QUERY = "UPDATE public.\"blackjack\" SET winnings = "+Double.toString(game.bet*2.5)+", active = false, dealer_hand = \'"+game.getDealersCards()+"\' WHERE blackjack_game_id IN (SELECT blackjack_game_id FROM public.\"blackjack\" WHERE username = \'"+game.username+"\' AND active = true ORDER BY blackjack_game_id DESC LIMIT 1 FOR UPDATE);";
+						Statement stmt = conn.createStatement();
+						stmt.executeUpdate(QUERY);
+						game = cachedBlackjackGames.getFirst();
+						conn.close();
+					} catch (SQLException e) {
+						e.printStackTrace();
+						jo = new JSONObject();
+						jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT STORE GAME INTO DATABASE");
+						return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+					}
 					return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 				}
 				jo.put("GAME_ENDED", "false");
