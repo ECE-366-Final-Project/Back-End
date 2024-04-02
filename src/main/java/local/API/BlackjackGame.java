@@ -15,7 +15,7 @@ public class BlackjackGame {
 
     private long timeToKill_SECONDS = 0;
     public final String username;
-    public final double bet;
+    public double bet;
     private String deck;
     private String playersCards;
     private String dealersCards;

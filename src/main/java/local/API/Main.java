@@ -164,13 +164,21 @@ public class Main {
 		}
 
 		// 5. Update Database (userBalance, slotsHistory)...		
-		String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE username = \'"+username+"\';";
+		// String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE username = \'"+username+"\';";
 		String QUERY_slots = "INSERT INTO public.\"slots\"(username, bet, payout_id, winnings) VALUES (\'"+username+"\', "+bet+", "+payout_id+", "+winnings+");";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(QUERY_user);
+			ResponseEntity<String> withdrawResult = bet(token, bet);
+			if (withdrawResult.getStatusCode() != HttpStatus.OK) {
+				return withdrawResult;
+			}
+			ResponseEntity<String> depositResult = payout(token, Double.toString(winnings));
+			if (depositResult.getStatusCode() != HttpStatus.OK) {
+				return depositResult;
+			}
+			// stmt.executeUpdate(QUERY_user);
 			stmt.executeUpdate(QUERY_slots);
 			conn.close();
 			JSONObject jo = new JSONObject();
@@ -240,7 +248,7 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
-		ResponseEntity<String> withdrawResult = withdraw(token, bet);
+		ResponseEntity<String> withdrawResult = bet(token, bet);
 		if (withdrawResult.getStatusCode() != HttpStatus.OK) {
 			return withdrawResult;
 		}
@@ -263,7 +271,7 @@ public class Main {
 					jo.put("PLAYERS_CARDS", game.getPlayersCards());
 					jo.put("DEALERS_CARDS", game.getDealersCards());
 					jo.put("PAYOUT", 2.5);
-					ResponseEntity<String> depositResult = deposit(token, Double.toString(game.bet*2.5));
+					ResponseEntity<String> depositResult = payout(token, Double.toString(game.bet*2.5));
 					if (depositResult.getStatusCode() != HttpStatus.OK) {
 						return depositResult;
 					}
@@ -350,6 +358,7 @@ public class Main {
 		JSONObject jo = new JSONObject();
 		double payout = -1.0;
 		int playerScore;
+		int dealerScore;
 		switch (move) {
 			case "hit":
 				game.dealPlayer(1);
@@ -374,7 +383,7 @@ public class Main {
 				break;
 			case "stand":
 				playerScore = game.getScore(game.getPlayersCards());
-				int dealerScore = game.resolveDealersHand();
+				dealerScore = game.resolveDealersHand();
 				String dealersCards = game.getDealersCards();
 				if (dealerScore > 21 || playerScore > dealerScore) {
 					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
@@ -382,7 +391,7 @@ public class Main {
 					jo.put("WINNER", "PLAYER");
 					jo.put("PLAYER_SCORE", playerScore);
 					jo.put("DEALER_SCORE", dealerScore);
-					jo.put("GAME_RESULT", "DEALER_BUST");
+					jo.put("GAME_RESULT", "PLAYER_WIN");
 					jo.put("PLAYERS_CARDS", game.getPlayersCards());
 					jo.put("DEALERS_CARDS", game.getDealersCards());
 					jo.put("PAYOUT", Double.toString(2.0));
@@ -411,12 +420,67 @@ public class Main {
 					payout = 0.0;
 				}
 				break;
+			case "double_down":
+				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet));
+				if (depositResult.getStatusCode() != HttpStatus.OK) {
+					return depositResult;
+				}
+				game.bet *= 2;
+				game.dealPlayer(1);
+				playerScore = game.getScore(game.getPlayersCards());
+				dealerScore = game.resolveDealersHand();
+				if (playerScore > 21) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", game.getScore(game.getDealersCards()));
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_BUST");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				} else if (dealerScore > 21 || playerScore > dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_PLAYER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(2.0));
+					payout = 2.0;
+				} else if (playerScore == dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "TIE");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_PUSH");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(1.0));
+					payout = 1.0;
+				} else {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_DEALER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				}
+				break;
 			default:
 				jo.put("MESSAGE", "INVALID ACTION");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 		}
 		if (payout >= 0) {
-			ResponseEntity<String> depositResult = deposit(token, Double.toString(game.bet*payout));
+			ResponseEntity<String> depositResult = payout(token, Double.toString(game.bet*payout));
 			if (depositResult.getStatusCode() != HttpStatus.OK) {
 				return depositResult;
 			}
@@ -653,6 +717,87 @@ public class Main {
 			conn.close();
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "WITHDRAWAL SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	public ResponseEntity<String> bet(	@RequestParam(value = "token", defaultValue = "") String token,
+										@RequestParam(value = "amount", defaultValue = "-1") String betAmount) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
+        String username = cachedSessionTokens.get(token);
+
+		double amount;
+		try {
+			amount = Double.parseDouble(betAmount);
+		} catch (Exception e) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+		if (!isValidBet(username, betAmount)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INSUFFICIENT FUNDS");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = \'"+username+"\';";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'BET', "+betAmount+");";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "WITHDRAWAL SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	public ResponseEntity<String> payout(	@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "amount", defaultValue = "-1") String paymentAmount) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
+        String username = cachedSessionTokens.get(token);
+
+		double amount;
+		try {
+			amount = Double.parseDouble(paymentAmount);
+		} catch (Exception e) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE username = \'"+username+"\';";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'PAYOUT', "+paymentAmount+");";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "DEPOSIT SUCCESSFUL");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();

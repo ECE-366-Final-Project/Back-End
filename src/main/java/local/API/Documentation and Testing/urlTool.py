@@ -1,71 +1,77 @@
 import requests
+import random
 import json
 from http.client import responses as codes
 
 def printResponse(response: requests.Response) -> None:
     print(json.dumps(response.json(), indent=2), end='\n\n')
 
-num: int = 2
+loop: int = int(63*random.random())+1
 
-username: str = f'flof_{num}'
-passkey: str = 'password'
+iteration: int = 2
 
-port: int = 8080
+for i in range(loop):
+    num: int = i
 
-url: str = f'http://127.0.0.1:{port}'
+    username: str = f'user_{str(iteration)}_{num+int(random.random()*100)}'
+    passkey: str = f'password'
 
-responses: list[requests.Response] = []
+    port: int = 8080
 
-response: requests.Response = requests.get(f'{url}/CreateUser?username={username}&passkey={passkey}')
-print("CreateUser", response.status_code, codes[response.status_code], sep=': ')
-printResponse(response)
-responses.append(response)
+    url: str = f'http://127.0.0.1:{port}'
 
-response: requests.Response = requests.get(f'{url}/LogIn?username={username}&passkey={passkey}')
-print("LogIn", response.status_code, codes[response.status_code], sep=': ')
-printResponse(response)
-responses.append(response)
+    responses: list[requests.Response] = []
 
-session_token: str = response.json()["TOKEN"]
-
-amount: float = 10_000_000.00
-response = requests.get(f'{url}/Deposit?token={session_token}&amount={amount}')
-print("Deposit", response.status_code, codes[response.status_code], sep=': ')
-printResponse(response)
-responses.append(response)
-
-amount = 12_057.63
-response = requests.get(f'{url}/Withdraw?token={session_token}&amount={amount}')
-print("Withdraw", response.status_code, codes[response.status_code], sep=': ')
-printResponse(response)
-responses.append(response)
-
-blackjack_amount: int = 1
-
-for _ in range(blackjack_amount):
-    bet: float = 10.00
-    response = requests.get(f'{url}/NewBlackjack?token={session_token}&bet={bet}')
-    print("NewBlackjack", response.status_code, codes[response.status_code], sep=': ')
+    response: requests.Response = requests.get(f'{url}/CreateUser?username={username}&passkey={passkey}')
+    print("CreateUser", response.status_code, codes[response.status_code], sep=': ')
     printResponse(response)
     responses.append(response)
 
-    move1: str = 'hit'
-    response = requests.get(f'{url}/UpdateBlackjack?token={session_token}&move={move1}')
-    print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
+    response: requests.Response = requests.get(f'{url}/LogIn?username={username}&passkey={passkey}')
+    print("LogIn", response.status_code, codes[response.status_code], sep=': ')
     printResponse(response)
     responses.append(response)
 
-    move2: str = 'stand'
-    response = requests.get(f'{url}/UpdateBlackjack?token={session_token}&move={move2}')
-    print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
+    session_token: str = response.json()["TOKEN"]
+
+    amount: float = 10_000_000.00*random.random()
+    response = requests.get(f'{url}/Deposit?token={session_token}&amount={amount}')
+    print("Deposit", response.status_code, codes[response.status_code], sep=': ')
     printResponse(response)
     responses.append(response)
 
-slots_amount: int = 1
-
-for _ in range(slots_amount):
-    bet: float = 10.00
-    response = requests.get(f'{url}/PlaySlots?token={session_token}&bet={bet}')
-    print("PlaySlots", response.status_code, codes[response.status_code], sep=': ')
+    amount = 10_000.00*random.random()
+    response = requests.get(f'{url}/Withdraw?token={session_token}&amount={amount}')
+    print("Withdraw", response.status_code, codes[response.status_code], sep=': ')
     printResponse(response)
     responses.append(response)
+
+    blackjack_amount: int = int(31*random.random())+1
+
+    for _ in range(blackjack_amount):
+        bet: float = 10.00
+        response = requests.get(f'{url}/NewBlackjack?token={session_token}&bet={bet}')
+        print("NewBlackjack", response.status_code, codes[response.status_code], sep=': ')
+        printResponse(response)
+        responses.append(response)
+
+        move1: str = 'hit'
+        response = requests.get(f'{url}/UpdateBlackjack?token={session_token}&move={move1}')
+        print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
+        printResponse(response)
+        responses.append(response)
+
+        move2: str = 'stand'
+        response = requests.get(f'{url}/UpdateBlackjack?token={session_token}&move={move2}')
+        print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
+        printResponse(response)
+        responses.append(response)
+
+    slots_amount: int = int(31*random.random())+1
+
+    for _ in range(slots_amount):
+        bet: float = 10.00
+        response = requests.get(f'{url}/PlaySlots?token={session_token}&bet={bet}')
+        print("PlaySlots", response.status_code, codes[response.status_code], sep=': ')
+        printResponse(response)
+        responses.append(response)
