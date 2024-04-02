@@ -325,7 +325,7 @@ public class Main {
 				rs.next();
 				if (rs.getInt(1) == 0) {
 					JSONObject jo = new JSONObject();
-					jo.put("MESSAGE", "400, USER DOES NOT HAVE ANY ACTIVE GAMES");
+					jo.put("MESSAGE", "USER DOES NOT HAVE ANY ACTIVE GAMES");
 					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 				}
 				Statement stmt2 = conn.createStatement();
@@ -355,6 +355,7 @@ public class Main {
 				game.dealPlayer(1);
 				playerScore = game.getScore(game.getPlayersCards());
 				if (playerScore > 21) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
 					jo.put("GAME_ENDED", "true");
 					jo.put("WINNER", "DEALER");
 					jo.put("PLAYER_SCORE", playerScore);
@@ -376,6 +377,7 @@ public class Main {
 				int dealerScore = game.resolveDealersHand();
 				String dealersCards = game.getDealersCards();
 				if (dealerScore > 21 || playerScore > dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
 					jo.put("GAME_ENDED", "true");
 					jo.put("WINNER", "PLAYER");
 					jo.put("PLAYER_SCORE", playerScore);
@@ -386,6 +388,7 @@ public class Main {
 					jo.put("PAYOUT", Double.toString(2.0));
 					payout = 2.0;
 				} else if (playerScore == dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
 					jo.put("GAME_ENDED", "true");
 					jo.put("WINNER", "TIE");
 					jo.put("PLAYER_SCORE", playerScore);
@@ -396,6 +399,7 @@ public class Main {
 					jo.put("PAYOUT", Double.toString(1.0));
 					payout = 1.0;
 				} else {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
 					jo.put("GAME_ENDED", "true");
 					jo.put("WINNER", "DEALER");
 					jo.put("PLAYER_SCORE", playerScore);
@@ -435,7 +439,7 @@ public class Main {
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
-		jo.put("MESSAGE", "GAME UPDATED");
+		jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 

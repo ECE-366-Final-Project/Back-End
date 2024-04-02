@@ -19,6 +19,7 @@
     "GAME_ENDED": "bool"
   },
   "UpdateBlackjack": {
+    "MESSAGE": "String",
     "GAME_RESULT": "String",
     "WINNER": "String",
     "PLAYER_SCORE": "int",
