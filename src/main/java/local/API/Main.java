@@ -175,9 +175,9 @@ public class Main {
 			conn.close();
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "SLOTS GAME SUCCESSFUL");
-			jo.put("winnings", winnings);
-			jo.put("payout", payout);
-			jo.put("payout_id", payout_id);
+			jo.put("WINNINGS", winnings);
+			jo.put("PAYOUT", payout);
+			jo.put("PAYOUT_ID", payout_id);
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -253,8 +253,8 @@ public class Main {
 			if (insertBlackjackGameDB(game)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "CREATION OF NEW BLACKJACK GAME SUCCESSFUL");
-				jo.put("players_cards", game.getPlayersCards());
-				jo.put("dealers_cards", game.getDealersCards().substring(0, 2));
+				jo.put("PLAYERS_CARDS", game.getPlayersCards());
+				jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
 				if (game.getScore(game.getPlayersCards()) == 21) {
 					jo.put("GAME_ENDED", "true");
 					jo.put("WINNER", "PLAYER");
@@ -536,7 +536,7 @@ public class Main {
 			cachedSessionTokens.put(hash, username);
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "LOG IN SUCCESSFUL");
-			jo.put("token", hash);
+			jo.put("TOKEN", hash);
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();

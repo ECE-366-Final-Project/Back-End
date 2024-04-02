@@ -1,0 +1,44 @@
+{
+  "Status": {
+    "MESSAGE": "String"
+  },
+  "Ping": {
+    "MESSAGE": "String"
+  },
+  "PlaySlots": {
+    "MESSAGE": "String",
+    "payout_id": "int",
+    "payout": "double",
+    "winnings": "double"
+  },
+  "NewBlackjack": {
+    "MESSAGE": "String",
+    "PLAYER_SCORE": "int",
+    "players_cards": "String",
+    "dealers_cards": "String",
+    "GAME_ENDED": "bool"
+  },
+  "UpdateBlackjack": {
+    "GAME_RESULT": "String",
+    "WINNER": "String",
+    "PLAYER_SCORE": "int",
+    "DEALER_SCORE": "int",
+    "PAYOUT": "double",
+    "GAME_ENDED": "bool",
+    "PLAYERS_CARDS": "String",
+    "DEALERS_CARDS": "String"
+  },
+  "LogIn": {
+    "MESSAGE": "String",
+    "token": "String"
+  },
+  "CreateUser": {
+    "MESSAGE": "String"
+  },
+  "Deposit": {
+    "MESSAGE": "String"
+  },
+  "Withdraw": {
+    "MESSAGE": "String"
+  }
+}
