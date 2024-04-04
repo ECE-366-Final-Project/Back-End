@@ -421,7 +421,7 @@ public class Main {
 				}
 				break;
 			case "double_down":
-				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet));
+				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet), true);
 				if (depositResult.getStatusCode() != HttpStatus.OK) {
 					return depositResult;
 				}
@@ -726,8 +726,11 @@ public class Main {
 		}
 	}
 
-	public ResponseEntity<String> bet(	@RequestParam(value = "token", defaultValue = "") String token,
-										@RequestParam(value = "amount", defaultValue = "-1") String betAmount) {
+	public ResponseEntity<String> bet(String token, String betAmount) {
+		return bet(token, betAmount, false);
+	}
+
+	public ResponseEntity<String> bet(String token, String betAmount, boolean isDoubleDown) {
 		if (!isValidAccount(token)) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
@@ -749,8 +752,15 @@ public class Main {
 			jo.put("MESSAGE", "INSUFFICIENT FUNDS");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
+
+		String QUERY_transaction_history;
+
+		if (isDoubleDown) {
+			QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'DOUBLE_DOWN', "+betAmount+");";
+		} else {
+			QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'BET', "+betAmount+");";
+		}
 		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = \'"+username+"\';";
-		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'BET', "+betAmount+");";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -759,7 +769,7 @@ public class Main {
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
 			JSONObject jo = new JSONObject();
-			jo.put("MESSAGE", "WITHDRAWAL SUCCESSFUL");
+			jo.put("MESSAGE", "BET SUCCESSFUL");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -769,8 +779,7 @@ public class Main {
 		}
 	}
 
-	public ResponseEntity<String> payout(	@RequestParam(value = "token", defaultValue = "") String token,
-											@RequestParam(value = "amount", defaultValue = "-1") String paymentAmount) {
+	public ResponseEntity<String> payout(String token, String paymentAmount) {
 		if (!isValidAccount(token)) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
@@ -797,7 +806,7 @@ public class Main {
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
 			JSONObject jo = new JSONObject();
-			jo.put("MESSAGE", "DEPOSIT SUCCESSFUL");
+			jo.put("MESSAGE", "PAYOUT SUCCESSFUL");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();

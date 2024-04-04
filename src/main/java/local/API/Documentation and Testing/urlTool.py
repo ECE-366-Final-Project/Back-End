@@ -60,8 +60,10 @@ for i in range(loop):
         print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
         printResponse(response)
         responses.append(response)
-
-        move2: str = 'stand'
+        
+        move2: str = 'double_down'
+        if (random.random() >= 0.5):
+            move2 = 'stand'
         response = requests.get(f'{url}/UpdateBlackjack?token={session_token}&move={move2}')
         print("UpdateBlackjack", response.status_code, codes[response.status_code], sep=': ')
         printResponse(response)
