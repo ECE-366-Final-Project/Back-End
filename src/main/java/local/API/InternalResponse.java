@@ -1,15 +1,21 @@
 package local.API;
 
-import java.util.List;
-
 // built-to-order response class
 // provides a basic response code, and an optional list to provide
 // necessary user-defined information
-public class InternalResponse {
-	public int responseCode;
-	public List data;
+public class InternalResponse<T> {
+	private static int responseCode;
+	private static T data;
 
-	public InternalResponse(int code, List d){
+	// response data is RO, we shouldnt really be changing it	
+	public static int getResponseCode(){
+		return responseCode;
+	}
+	public static List getData(){
+		return data;
+	}
+
+	public InternalResponse(int code, T d){
 		this.responseCode = code;
 		this.data = d;
 	}

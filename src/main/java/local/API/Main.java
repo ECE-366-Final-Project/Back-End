@@ -506,6 +506,10 @@ public class Main {
 			return "500, INTERNAL SERVER ERROR;";
 		}
 	}
+
+	// Roulette
+	
+	//@RequestMapping("/playRoulette")
 }
 
 // PARAM FORMATING 
