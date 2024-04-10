@@ -1,4 +1,3 @@
-// Demo API Skeleton, James Ryan
 // GPL v3
 
 package local.API;
@@ -12,24 +11,51 @@ import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
 import local.API.BlackjackLinkedList;
 
+import org.json.JSONObject;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.LinkedList;
 import java.util.Random;
 import java.sql.* ;  // for standard JDBC programs
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 @SpringBootApplication
 @RestController
 public class Main {
+
 	private static final String DB = System.getenv("POSTGRES_DB");
 	private static final String DB_URL ="jdbc:postgresql://db:5432/"+DB; 
 	private static final String USER = System.getenv("POSTGRES_USER");
 	private static final String PASS = System.getenv("POSTGRES_PASSWORD");
-	
+
+	private static final double[] payoutTable = new double[1000];
+
+    HashMap<String, String> cachedSessionTokens = new HashMap<String, String>();
+
+    Random rand = new Random();
+
+	String API_SESSION_SALT = String.valueOf(rand.nextInt(65535));
+
 	public static void main(String[] args){
 		// Test connection to database. If its not active, fail loudly.
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+            String QUERY = "SELECT payout FROM public.\"slots_payouts\" LIMIT 1000;";
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+            int i = 0;
+            while (rs.next() && i < 1000) {
+                payoutTable[i++] = rs.getDouble(1);
+            }
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -39,8 +65,6 @@ public class Main {
 		// Start Spring with the args passed to our program on first-run.
 		SpringApplication.run(Main.class, args);
 	}
-
-	Random rand = new Random();
 
 	// Specify an API path to make the request to
 	// type `curl localhost:8080/Demo` to make the request
@@ -52,41 +76,25 @@ public class Main {
 
 	// ping api
 	@GetMapping("/Status")
-	public String status() {
-		return "CooperCasino (Status: Online)\n";
+	public ResponseEntity<String> status() {
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "CooperCasino (Status: Online)");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 	@GetMapping("/Ping")
-	public String ping() {
-		return "CooperCasino (Ping: Sucessful)\n";
+	public ResponseEntity<String> ping() {
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "CooperCasino (Ping: Sucessful)");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
+  
+    private boolean isValidAccount(String token) {
+        return cachedSessionTokens.containsKey(token);
+    }
 
-	private boolean isValidAccount(String userID_string) {
-		int userID;
-		try {
-			userID = Integer.parseInt(userID_string);
-		} catch (Exception e) {
-			return false;
-		}
-		String QUERY = "SELECT COUNT(1) FROM public.\"user\" WHERE user_id = "+userID+" AND active = true;";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			int count = rs.getInt(1);
-			conn.close();
-			return (count == 1);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return false;
-	}
-
-	private boolean isValidBet(String userID_string, String bet_string) {
-		int userID;
+	private boolean isValidBet(String username, String bet_string) {
 		double bet;
 		try {
-			userID = Integer.parseInt(userID_string);
 			bet = Double.parseDouble(bet_string);
 		} catch (Exception e) {
 			return false;
@@ -94,13 +102,13 @@ public class Main {
 		if (bet <= 0) {
 			return false;
 		}
-		String QUERY = "SELECT balance FROM public.\"user\" WHERE user_id = "+userID+";";
+		String QUERY = "SELECT balance FROM public.\"user\" WHERE username = \'"+username+"\';";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			rs.next();
-			Double bal = rs.getObject(1) != null ? rs.getDouble(1) : null;
+			Double bal = rs.getDouble(1);
 			conn.close();
 			if (bal == null) {
 				return false;
@@ -113,33 +121,27 @@ public class Main {
 	}
 
 	private double getPayout(int payout_id) {
-		String QUERY = "SELECT payout FROM public.\"slots_payouts\" WHERE payout_id = "+payout_id+";";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			Double payout = rs.getObject(1) != null ? rs.getDouble(1) : null;
-			conn.close();
-			return (double) payout;
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return -1;
+		return payoutTable[payout_id];
 	}
 
 	@GetMapping("/PlaySlots")
-	public String playSlots(@RequestParam(value = "userID", defaultValue = "-1") String userID,
-							@RequestParam(value = "bet", defaultValue = "-1") String bet) {
+	public ResponseEntity<String> playSlots(@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 
 		// 1. Is Valid Account
-		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
+        String username = cachedSessionTokens.get(token);
+
 		// 2. Balance >= Bet
-		if (!isValidBet(userID, bet)) {
-			return "400, INVALID BET;";
+		if (!isValidBet(username, bet)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		// 3. Generate Roll
@@ -148,36 +150,53 @@ public class Main {
 		// 4. Get Payout And Winnings From DB
 		double payout = getPayout(payout_id);
 		if (payout < 0) {
-			return "400, INVALID PAYOUT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: INVALID PAYOUT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		double winnings;
 		try {
 			winnings = Double.parseDouble(bet) * payout;
 		} catch (Exception e) {
-			deposit(userID, bet);
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT PARSE BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		// 5. Update Database (userBalance, slotsHistory)...		
-		String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE user_id = "+userID+";";
-		String QUERY_slots = "INSERT INTO public.\"slots\"(user_id, bet, payout_id, winnings) VALUES ("+userID+", "+bet+", "+payout_id+", "+winnings+")";
+		// String QUERY_user = "UPDATE public.\"user\" SET balance = balance - "+bet+" + "+winnings+" WHERE username = \'"+username+"\';";
+		String QUERY_slots = "INSERT INTO public.\"slots\"(username, bet, payout_id, winnings) VALUES (\'"+username+"\', "+bet+", "+payout_id+", "+winnings+");";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(QUERY_user);
+			ResponseEntity<String> withdrawResult = bet(token, bet);
+			if (withdrawResult.getStatusCode() != HttpStatus.OK) {
+				return withdrawResult;
+			}
+			ResponseEntity<String> depositResult = payout(token, Double.toString(winnings));
+			if (depositResult.getStatusCode() != HttpStatus.OK) {
+				return depositResult;
+			}
+			// stmt.executeUpdate(QUERY_user);
 			stmt.executeUpdate(QUERY_slots);
 			conn.close();
-			return "200, "+winnings+", "+payout+", "+payout_id+";";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "SLOTS GAME SUCCESSFUL");
+			jo.put("WINNINGS", winnings);
+			jo.put("PAYOUT", payout);
+			jo.put("PAYOUT_ID", payout_id);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			// return "400";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return "400;";
 	}
 
-	private boolean hasActiveGame(int userID) {
-		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE active = true AND user_id = "+userID+";";
+	private boolean hasActiveGame(String username) {
+		String QUERY = "SELECT COUNT(1) FROM public.\"blackjack\" WHERE username = \'"+username+"\' AND active = true;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -188,13 +207,12 @@ public class Main {
 			return (count > 0);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			// return false;
+			return false;
 		}
-		return false;
 	}
 
-	private boolean insertBlackjackGameDB(BlackjackGame game, double bet) {
-		String QUERY = "INSERT INTO public.\"blackjack\" (user_id, bet, player_hand, dealer_hand) VALUES ("+game.userID+", "+bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
+	private boolean insertBlackjackGameDB(BlackjackGame game) {
+		String QUERY = "INSERT INTO public.\"blackjack\" (username, bet, player_hand, dealer_hand) VALUES (\'"+game.username+"\', "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -209,60 +227,116 @@ public class Main {
 
 	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
 	BlackjackLinkedList cachedBlackjackGames = new BlackjackLinkedList();
-	HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
+	HashMap<String, BlackjackGame> activeGameLookup = new HashMap<String, BlackjackGame>();
 
 	@GetMapping("/NewBlackjack")
-	public String newBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
-								@RequestParam(value = "bet", defaultValue = "-1") String bet) {
+	public ResponseEntity<String> newBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
+												@RequestParam(value = "bet", defaultValue = "-1") String bet) {
 		// 1. Is Valid Account
-		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
+
+        String username = cachedSessionTokens.get(token);
+
 		// 2. Balance >= Bet
-		if (!isValidBet(userID, bet)) {
-			return "400, INVALID BET;";
+		if (!isValidBet(username, bet)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
+
+		ResponseEntity<String> withdrawResult = bet(token, bet);
+		if (withdrawResult.getStatusCode() != HttpStatus.OK) {
+			return withdrawResult;
+		}
+
 		// 3. Check if user has active game
-		if (!hasActiveGame(Integer.parseInt(userID))) {
+		if (!hasActiveGame(username)) {
 			// add new blackjack game to cachedBlackjackGames and to blackjack table in databse
-			BlackjackGame game = new BlackjackGame(Integer.parseInt(userID), Optional.empty(),  Optional.empty(),  Optional.empty(), Double.parseDouble(bet));
-			cachedBlackjackGames.add(game);
-			activeGameLookup.put(Integer.parseInt(userID), game);
+			BlackjackGame game = new BlackjackGame(username, Optional.empty(),  Optional.empty(),  Optional.empty(), Double.parseDouble(bet));
 			// Insert game into "blackjack" table of database
-			if (insertBlackjackGameDB(game, Double.parseDouble(bet))) {
-				return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
+			if (insertBlackjackGameDB(game)) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "CREATION OF NEW BLACKJACK GAME SUCCESSFUL");
+				jo.put("PLAYERS_CARDS", game.getPlayersCards());
+				jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
+				if (game.getScore(game.getPlayersCards()) == 21) {
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", 21);
+					jo.put("GAME_RESULT", "BLACKJACK");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", 2.5);
+					ResponseEntity<String> depositResult = payout(token, Double.toString(game.bet*2.5));
+					if (depositResult.getStatusCode() != HttpStatus.OK) {
+						return depositResult;
+					}
+					try {
+						Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+						String QUERY = "UPDATE public.\"blackjack\" SET winnings = "+Double.toString(game.bet*2.5)+", active = false, dealer_hand = \'"+game.getDealersCards()+"\' WHERE blackjack_game_id IN (SELECT blackjack_game_id FROM public.\"blackjack\" WHERE username = \'"+game.username+"\' AND active = true ORDER BY blackjack_game_id DESC LIMIT 1 FOR UPDATE);";
+						Statement stmt = conn.createStatement();
+						stmt.executeUpdate(QUERY);
+						game = cachedBlackjackGames.getFirst();
+						conn.close();
+					} catch (SQLException e) {
+						e.printStackTrace();
+						jo = new JSONObject();
+						jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT STORE GAME INTO DATABASE");
+						return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+					}
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+				}
+				jo.put("GAME_ENDED", "false");
+				jo.put("PLAYER_SCORE", game.getScore(game.getPlayersCards()));
+				cachedBlackjackGames.add(game);
+				activeGameLookup.put(username, game);
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 			}
-			return "400, ERROR INSERTING INTO DATABSE;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE INSERTION ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return "400, GAME ALREADY IN PROGRESS;";
+
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "BLACKJACK GAME ALREADY IN PROGRESS");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 	}
 
 	@GetMapping("/UpdateBlackjack")
-	public String updateBlackjack(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
-									@RequestParam(value = "move", defaultValue = "-1") String move) {
-		int userID_int;
-		try {
-			userID_int = Integer.parseInt(userID);
-		} catch (Exception e) {
-			return "400, INVALID USER ID;";
+	public ResponseEntity<String> updateBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
+													@RequestParam(value = "move", defaultValue = "-1") String move) {
+        // 1. Is Valid Account
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
-		BlackjackGame game = activeGameLookup.get(userID_int);
+
+        String username = cachedSessionTokens.get(token);
+
+		BlackjackGame game = activeGameLookup.get(username);
 		if (game == null) {
 			// check database
-			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
-			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
+			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
 			try {
 				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 				Statement stmt = conn.createStatement();
 				ResultSet rs = stmt.executeQuery(QUERY_check);
 				rs.next();
 				if (rs.getInt(1) == 0) {
-					return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "USER DOES NOT HAVE ANY ACTIVE GAMES");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 				}
 				Statement stmt2 = conn.createStatement();
 				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
 				rs2.next();
-				game = new BlackjackGame(	userID_int, 
+				game = new BlackjackGame(	username, 
 											Optional.of(rs.getString("deck")), 
 											Optional.of(rs.getString("player_hand")),
 											Optional.of(rs.getString("dealer_hand")),
@@ -270,60 +344,164 @@ public class Main {
 				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
-				return "500, INTERNAL SERVER ERROR";
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		} else {
 			cachedBlackjackGames.remove(game);
 		}
-		// resolve blackjack logic on game
-		game.resetTimeToKill();
-		cachedBlackjackGames.add(game);
-		activeGameLookup.put(userID_int, game);
-		return "400, TODO";
-	}
-
-	@GetMapping("/RejoinBlackjack")
-	public String rejoinBlackjack(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
-		int userID_int;
-		try {
-			userID_int = Integer.parseInt(userID);
-		} catch (Exception e) {
-			return "400, INVALID USER ID;";
+		activeGameLookup.remove(game.username);
+		JSONObject jo = new JSONObject();
+		double payout = -1.0;
+		int playerScore;
+		int dealerScore;
+		switch (move) {
+			case "hit":
+				game.dealPlayer(1);
+				playerScore = game.getScore(game.getPlayersCards());
+				if (playerScore > 21) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", game.getScore(game.getDealersCards()));
+					jo.put("GAME_RESULT", "BUST");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				} else {
+					jo.put("GAME_ENDED", "false");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
+				}
+				break;
+			case "stand":
+				playerScore = game.getScore(game.getPlayersCards());
+				dealerScore = game.resolveDealersHand();
+				String dealersCards = game.getDealersCards();
+				if (dealerScore > 21 || playerScore > dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "PLAYER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(2.0));
+					payout = 2.0;
+				} else if (playerScore == dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "TIE");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "PUSH");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(1.0));
+					payout = 1.0;
+				} else {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DEALER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				}
+				break;
+			case "double_down":
+				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet), true);
+				if (depositResult.getStatusCode() != HttpStatus.OK) {
+					return depositResult;
+				}
+				game.bet *= 2;
+				game.dealPlayer(1);
+				playerScore = game.getScore(game.getPlayersCards());
+				dealerScore = game.resolveDealersHand();
+				if (playerScore > 21) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", game.getScore(game.getDealersCards()));
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_BUST");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				} else if (dealerScore > 21 || playerScore > dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "PLAYER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_PLAYER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(2.0));
+					payout = 2.0;
+				} else if (playerScore == dealerScore) {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "TIE");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_PUSH");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(1.0));
+					payout = 1.0;
+				} else {
+					jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+					jo.put("GAME_ENDED", "true");
+					jo.put("WINNER", "DEALER");
+					jo.put("PLAYER_SCORE", playerScore);
+					jo.put("DEALER_SCORE", dealerScore);
+					jo.put("GAME_RESULT", "DOUBLE_DOWN_DEALER_WIN");
+					jo.put("PLAYERS_CARDS", game.getPlayersCards());
+					jo.put("DEALERS_CARDS", game.getDealersCards());
+					jo.put("PAYOUT", Double.toString(0.0));
+					payout = 0.0;
+				}
+				break;
+			default:
+				jo.put("MESSAGE", "INVALID ACTION");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 		}
-		BlackjackGame game = activeGameLookup.get(userID_int);
-		if (game == null) {
-			// check database
-			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
-			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE userID = "+userID+";";
+		if (payout >= 0) {
+			ResponseEntity<String> depositResult = payout(token, Double.toString(game.bet*payout));
+			if (depositResult.getStatusCode() != HttpStatus.OK) {
+				return depositResult;
+			}
 			try {
 				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				String QUERY = "UPDATE public.\"blackjack\" SET bet = "+game.bet+", winnings = "+Double.toString(game.bet*payout)+", active = false, player_hand = \'"+game.getPlayersCards()+"\', dealer_hand = \'"+game.getDealersCards()+"\' WHERE blackjack_game_id IN (SELECT blackjack_game_id FROM public.\"blackjack\" WHERE username = \'"+game.username+"\' AND active = true ORDER BY blackjack_game_id DESC LIMIT 1 FOR UPDATE);";
 				Statement stmt = conn.createStatement();
-				ResultSet rs = stmt.executeQuery(QUERY_check);
-				rs.next();
-				if (rs.getInt(1) == 0) {
-					return "400, USER DOES NOT HAVE ANY ACTIVE GAMES";
-				}
-				Statement stmt2 = conn.createStatement();
-				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
-				rs2.next();
-				game = new BlackjackGame(	userID_int, 
-											Optional.of(rs.getString("deck")), 
-											Optional.of(rs.getString("player_hand")),
-											Optional.of(rs.getString("dealer_hand")),
-											rs.getDouble("bet"));
+				stmt.executeUpdate(QUERY);
+				game = cachedBlackjackGames.getFirst();
 				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
-				return "500, INTERNAL SERVER ERROR";
+				jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT STORE GAME INTO DATABASE");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
-
-		} else {
-			cachedBlackjackGames.remove(game);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		}
+		activeGameLookup.put(game.username, game);
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
-		activeGameLookup.put(userID_int, game);
-		return "200, "+game.getPlayersCards()+", "+game.getDealersCards().substring(0, 2)+";";
+		activeGameLookup.put(username, game);
+		jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
 	private int resolveTimeToLive() {
@@ -332,8 +510,8 @@ public class Main {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			while (game != null && (!game.isAlive())) {
 				cachedBlackjackGames.remove(game);
-				activeGameLookup.remove(game.userID);
-				String QUERY = "INSERT INTO public.\"active_blackjack_games\" (user_id, bet, deck, player_hand, dealer_hand) VALUES ("+game.userID+", "+game.bet+", \'"+game.getPlayersCards()+"\', \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
+				activeGameLookup.remove(game.username);
+				String QUERY = "INSERT INTO public.\"active_blackjack_games\" (username, bet, deck, player_hand, dealer_hand) VALUES ("+game.username+", "+game.bet+", \'"+game.getDeck()+"\', \'"+game.getPlayersCards()+"\', \'"+game.getDealersCards()+"\');";
 				Statement stmt = conn.createStatement();
 				stmt.executeUpdate(QUERY);
 				game = cachedBlackjackGames.getFirst();
@@ -371,21 +549,79 @@ public class Main {
 			return false;
 		}
 		// https://stackoverflow.com/a/12019115
-		String pattern = "(?=.{2,15}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])";
+		String pattern = "(?=.{4,16}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])";
 		if(!username.matches(pattern)){
 			return false;
 		}
 		return !usernameIsInUse(username);
 	}
 
+
+	// https://www.geeksforgeeks.org/sha-256-hash-in-java/
+	public static byte[] getSHA(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        return md.digest(input.getBytes(StandardCharsets.UTF_8));
+    }
+    
+    public static String toHexString(byte[] hash) {
+        BigInteger number = new BigInteger(1, hash);
+		StringBuilder hexString = new StringBuilder(number.toString(16));
+        while (hexString.length() < 64) {
+            hexString.insert(0, '0');
+        }
+        return hexString.toString();
+    }
+
+	@GetMapping("/LogIn")
+	public ResponseEntity<String> logIn(@RequestParam(value = "username", defaultValue = "-1") String username,
+										@RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
+
+		String QUERY = "SELECT passkey FROM public.\"user\" WHERE username = \'"+username+"\';";
+
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			if (!rs.getString(1).equals(passkey)) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+			}
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		try {
+			String hash = toHexString(getSHA(username+API_SESSION_SALT));
+			cachedSessionTokens.put(hash, username);
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "LOG IN SUCCESSFUL");
+			jo.put("TOKEN", hash);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (Exception e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: COULD NOT CREATE SESSION TOKEN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
 	@GetMapping("/CreateUser")
-	public String createUser(@RequestParam(value = "username", defaultValue = "-1") String username) {
+	public ResponseEntity<String> createUser(   @RequestParam(value = "username", defaultValue = "-1") String username,
+                                				@RequestParam(value = "passkey", defaultValue = "-1") String passkey) {
 		if(!isValidUsername(username)) {
-			return "400, INVALID USERNAME;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID USERNAME");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		// we have a valid username.
-		String Q_ADDUSER = "INSERT INTO public.user(username, balance, created_at) VALUES ('"+username+"', 0, NOW());";
+		String Q_ADDUSER = "INSERT INTO public.user(username, passkey, balance, created_at) VALUES (\'"+username+"\', \'"+passkey+"\', 0, NOW());";
 		try {
 			// add the username
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -394,51 +630,37 @@ public class Main {
 			conn.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
-		return "200;";
-	}
-
-	// Sets a user to inactive but other API calls don't check if user is active yet
-	@GetMapping("/DeleteUser")
-	public String deleteUser(@RequestParam(value = "userID", defaultValue = "-1") String userID) {
-		if (userID.equals("1")) {
-			return "400, CANNOT DELETE ADMIN ACCOUNT;";
-		}
-		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
-		}
-		if (isValidBet(userID, "0.01")) {
-			return "400, USER BALANCE EXCEEDS 0;";
-		}
-		String QUERY = "UPDATE public.\"user\" SET active = false WHERE user_id = "+userID+";";
-		try {
-			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(QUERY);
-			conn.close();
-			return "200, DELETION SUCCESSFUL;";
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
-		}
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "ACCOUNT CREATION SUCCESSFUL");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
 	@GetMapping("/Deposit")
-	public String deposit(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
-							@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
-		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
+	public ResponseEntity<String> deposit(	@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "amount", defaultValue = "-1") String depositAmount) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
+
+        String username = cachedSessionTokens.get(token);
+
 		double amount;
 		try {
 			amount = Double.parseDouble(depositAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
-		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE user_id = "+userID+";";
-		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'DEPOSIT', "+depositAmount+");";
+		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE username = \'"+username+"\';";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'DEPOSIT', "+depositAmount+");";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -446,30 +668,43 @@ public class Main {
 			Statement stmt2 = conn.createStatement();
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
-			return "200, DEPOSIT SUCCESSFUL;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "DEPOSIT SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	@GetMapping("/Withdraw")
-	public String withdraw(	@RequestParam(value = "userID", defaultValue = "-1") String userID,
-							@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
-		if (!isValidAccount(userID)) {
-			return "400, INVALID USER ID;";
+	public ResponseEntity<String> withdraw(	@RequestParam(value = "token", defaultValue = "") String token,
+											@RequestParam(value = "amount", defaultValue = "-1") String withdrawAmount) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
+
+        String username = cachedSessionTokens.get(token);
+
 		double amount;
 		try {
 			amount = Double.parseDouble(withdrawAmount);
 		} catch (Exception e) {
-			return "400, INVALID AMOUNT;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
-		if (!isValidBet(userID, withdrawAmount)) {
-			return "400, INSUFFICIENT FUNDS";
+		if (!isValidBet(username, withdrawAmount)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INSUFFICIENT FUNDS");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
-		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE user_id = "+userID+";";
-		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (user_id, transaction_type, amount) VALUES ("+userID+", 'WITHDRAWAL', "+withdrawAmount+");";
+		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = \'"+username+"\';";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'WITHDRAWAL', "+withdrawAmount+");";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -477,33 +712,104 @@ public class Main {
 			Statement stmt2 = conn.createStatement();
 			stmt2.executeUpdate(QUERY_transaction_history);
 			conn.close();
-			return "200, WITHDRAWAL SUCCESSFUL;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "WITHDRAWAL SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
-	@GetMapping("/UserInfo")
-	public String userInfo(@RequestParam(value="username", defaultValue = "-1") String username) {
-		String QUERY = "SELECT user_id, balance FROM public.\"user\" WHERE username = \'"+ username + "\' AND active = true;";
-		if(!usernameIsInUse(username)){
-			if(!isValidUsername(username)) {
-				return "400, USERNAME INVALID;";
-			}
-			return "400, USER DOES NOT EXIST;";
+	public ResponseEntity<String> bet(String token, String betAmount) {
+		return bet(token, betAmount, false);
+	}
+
+	public ResponseEntity<String> bet(String token, String betAmount, boolean isDoubleDown) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
+
+        String username = cachedSessionTokens.get(token);
+
+		double amount;
+		try {
+			amount = Double.parseDouble(betAmount);
+		} catch (Exception e) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+		if (!isValidBet(username, betAmount)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INSUFFICIENT FUNDS");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+
+		String QUERY_transaction_history;
+
+		if (isDoubleDown) {
+			QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'DOUBLE_DOWN', "+betAmount+");";
+		} else {
+			QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'BET', "+betAmount+");";
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance - "+amount+" WHERE username = \'"+username+"\';";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			Double bal = rs.getDouble("balance");
-			int userID = rs.getInt("user_id");
-			return "200, " +userID+", "+bal+";";
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "BET SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return "500, INTERNAL SERVER ERROR;";
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	public ResponseEntity<String> payout(String token, String paymentAmount) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
+        String username = cachedSessionTokens.get(token);
+
+		double amount;
+		try {
+			amount = Double.parseDouble(paymentAmount);
+		} catch (Exception e) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID AMOUNT");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+		String QUERY = "UPDATE public.\"user\" SET balance = balance + "+amount+" WHERE username = \'"+username+"\';";
+		String QUERY_transaction_history = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'PAYOUT', "+paymentAmount+");";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(QUERY);
+			Statement stmt2 = conn.createStatement();
+			stmt2.executeUpdate(QUERY_transaction_history);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "PAYOUT SUCCESSFUL");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
