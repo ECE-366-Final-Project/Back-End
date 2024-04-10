@@ -102,7 +102,7 @@ LogIn = {
     'Type' : 'String', 
     'Default' : 'Service Unavailable'
   },
-  'token' : {
+  'TOKEN' : {
     'Type' : 'String',
     'Default' : 'N/A'
   },
@@ -130,10 +130,6 @@ Withdraw = {
 }
 
 mappings = {
-  'MESSAGE' : {
-    'Type' : 'String', 
-    'Default' : 'Service Unavailable'
-  },
   'Status' : Status,
   'Ping' : Ping,
   'PlaySlots' : PlaySlots,

@@ -1,8 +1,4 @@
 {
-  "MESSAGE": {
-    "Type": "String",
-    "Default": "Service Unavailable"
-  },
   "Status": {
     "MESSAGE": {
       "Type": "String",
@@ -98,7 +94,7 @@
       "Type": "String",
       "Default": "Service Unavailable"
     },
-    "token": {
+    "TOKEN": {
       "Type": "String",
       "Default": "N/A"
     }
