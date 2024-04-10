@@ -7,40 +7,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import java.util.Map;
+
+import local.API.Responses.RouletteResponse;
+
 public class Roulette {
 		
 	private Map<String, String> betsMade = null;
 
-	public class RouletteResponse<T> extends InternalResponse<T>{
-		public static final int INVALID = -1;
-
-		public returnInvalid(){
-			return new InternalResponse<List>(-1, List.of());
-		}
-		public returnStatus(int c){
-			return new InternalResponse<List>(c, List.of());
-		}
-
-		public RouletteResponse(int code, T d){
-			super(c, d);
-		}
-	}
-	
-	// decodes a request to play the game
-	// Map gets stored as a private variable
-	// 0 - fucked up
-	// 1 - yipee
-	private int RequestDecode(String requestData){
-		TypeToken<Map<String, String>> mapType = new TypeToken<Map<String, String>>(){};
-		String json = "{\"key\": \"value\"}";
-
-		betsMade = gson.fromJson(json, mapType);
-
-		return 1;
-	}
-
 	//order: greens, reds, blacks
-	protected enum Roll {
+	public enum Roll {
 		// this order MUST remain the same.
 		ZERO,
 		ONE,
