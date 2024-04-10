@@ -1,66 +1,148 @@
 import json
 
+DefaultHTTPStatus = 503;
+
 Status = {
-    'MESSAGE' : 'String'
+  'MESSAGE' : {
+    'Type' : 'String',
+    'Default' : 'Service Unavailable'
+  }
 }
 
 Ping = {
-    'MESSAGE' : 'String'
+  'MESSAGE' : {
+    'Type' : 'String',
+    'Default' : 'Service Unavailable'
+  }
 }
 
 PlaySlots = {
-    'MESSAGE' : 'String',
-    'PAYOUT_ID' : 'int',
-    'PAYOUT' : 'double',
-    'WINNINGS' : 'double'
+  'MESSAGE' : {
+    'Type' : 'String',
+    'Default' : 'Service Unavailable'
+  },
+  'PAYOUT_ID' : {
+    'Type' : 'int',
+    'Default' : -1
+  },
+  'PAYOUT' : {
+    'Type' : 'double',
+    'Default' : -1.0
+  },
+  'WINNINGS' : {
+    'Type' : 'double',
+    'Default' : -1.0
+  },
 }
 
 NewBlackjack = {
-    'MESSAGE': 'String',
-    'PLAYER_SCORE': 'int',
-    'PLAYERS_CARDS': 'String',
-    'DEALERS_CARDS': 'String',
-    'GAME_ENDED': 'bool'
+  'MESSAGE' : {
+    'Type' : 'String',
+    'Default' : 'Service Unavailable'
+  },
+  'PLAYER_SCORE' : {
+    'Type' : 'int',
+    'Default' : -1
+  },
+  'PLAYERS_CARDS' : {
+    'Type' : 'String',
+    'Default' : ''
+  },
+  'DEALERS_CARDS' : {
+    'Type' : 'String',
+    'Default' : ''
+  },
+  'GAME_ENDED' : {
+    'Type' : 'boolean',
+    'Default' : False
+  },
 }
 
 UpdateBlackjack = {
-    'GAME_RESULT' : 'String',
-    'WINNER' : 'String',
-    'PLAYER_SCORE' : 'int',
-    'DEALER_SCORE' : 'int',
-    'PAYOUT' : 'double',
-    'GAME_ENDED' : 'bool',
-    'PLAYERS_CARDS' : 'String',
-    'DEALERS_CARDS' : 'String'
+  'MESSAGE' : {
+    'Type' : 'String',
+    'Default' : 'Service Unavailable'
+  },
+  'GAME_RESULT' : {
+    'Type' : 'String',
+    'Default' : 'N/A'
+  },
+  'WINNER' : {
+    'Type' : 'String',
+    'Default' : 'N/A'
+  },
+  'PLAYER_SCORE' : {
+    'Type' : 'int',
+    'Default' : -1
+  },
+  'DEALER_SCORE' : {
+    'Type' : 'int',
+    'Default' : -1
+  },
+  'PAYOUT' : {
+    'Type' : 'double',
+    'Default' : -1.0
+  },
+  'GAME_ENDED' : {
+    'Type' : 'boolean', 
+    'Default' : False
+  },
+  'PLAYERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
+  'DEALERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
 }
 
 LogIn = {
-  'MESSAGE': 'String',
-  'token': 'String'
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  },
+  'token' : {
+    'Type' : 'String',
+    'Default' : 'N/A'
+  },
 }
 
 CreateUser = {
-  'MESSAGE': 'String',
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  }
 }
 
 Deposit = {
-  'MESSAGE': 'String'
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  }
 }
 
 Withdraw = {
-  'MESSAGE': 'String'
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  }
 }
 
 mappings = {
-    'Status' : Status,
-    'Ping' : Ping,
-    'PlaySlots' : PlaySlots,
-    'NewBlackjack' : NewBlackjack,
-    'UpdateBlackjack' : UpdateBlackjack,
-    'LogIn' : LogIn,
-    'CreateUser' : CreateUser,
-    'Deposit' : Deposit,
-    'Withdraw' : Withdraw
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  },
+  'Status' : Status,
+  'Ping' : Ping,
+  'PlaySlots' : PlaySlots,
+  'NewBlackjack' : NewBlackjack,
+  'UpdateBlackjack' : UpdateBlackjack,
+  'LogIn' : LogIn,
+  'CreateUser' : CreateUser,
+  'Deposit' : Deposit,
+  'Withdraw' : Withdraw
 }
 
 with open('docs.json', 'w') as outfile:
