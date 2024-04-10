@@ -87,7 +87,7 @@ public class Main {
 		jo.put("MESSAGE", "CooperCasino (Ping: Sucessful)");
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
-
+  
     private boolean isValidAccount(String token) {
         return cachedSessionTokens.containsKey(token);
     }
@@ -305,9 +305,6 @@ public class Main {
 		jo.put("MESSAGE", "BLACKJACK GAME ALREADY IN PROGRESS");
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 	}
-
-	// LinkedList<BlackjackGame> cachedBlackjackGames = new LinkedList<BlackjackGame>();
-	// HashMap<Integer, BlackjackGame> activeGameLookup = new HashMap<Integer, BlackjackGame>();
 
 	@GetMapping("/UpdateBlackjack")
 	public ResponseEntity<String> updateBlackjack(	@RequestParam(value = "token", defaultValue = "") String token,
@@ -815,6 +812,10 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	// Roulette
+	
+	//@RequestMapping("/playRoulette")
 }
 
 // PARAM FORMATING 
