@@ -17,9 +17,11 @@ public class UpdateBlackjackResponse extends InternalResponse {
 
 	private double PAYOUT = -1;
 
-	public void UpdateBlackjackResponse() {
-		super();
-	}
+	private boolean GAME_ENDED = false;
+
+	private String PLAYERS_CARDS = "";
+
+	private String DEALERS_CARDS = "";
 
 	public String get_GAME_RESULT() {
 		return GAME_RESULT;
@@ -54,6 +56,27 @@ public class UpdateBlackjackResponse extends InternalResponse {
 	}
 	public void set_PAYOUT(double PAYOUT) {
 		this.PAYOUT = PAYOUT;
+	}
+
+	public boolean get_GAME_ENDED() {
+		return GAME_ENDED;
+	}
+	public void set_GAME_ENDED(boolean GAME_ENDED) {
+		this.GAME_ENDED = GAME_ENDED;
+	}
+
+	public String get_PLAYERS_CARDS() {
+		return PLAYERS_CARDS;
+	}
+	public void set_PLAYERS_CARDS(String PLAYERS_CARDS) {
+		this.PLAYERS_CARDS = PLAYERS_CARDS;
+	}
+
+	public String get_DEALERS_CARDS() {
+		return DEALERS_CARDS;
+	}
+	public void set_DEALERS_CARDS(String DEALERS_CARDS) {
+		this.DEALERS_CARDS = DEALERS_CARDS;
 	}
 
 	public ResponseEntity<String> toResponseEntity() {

@@ -8,9 +8,6 @@ def get_Code(callName, declareParams, getAndsetParams, toResponseEntity):
             f'import local.API.Responses.InternalResponse;\n\n'\
             f'public class {callName}Response extends InternalResponse {{\n'\
             f'{declareParams}\n'\
-            f'\tpublic void {callName}Response() {{\n'\
-            f'\t\tsuper();\n'\
-            f'\t}}\n\n'\
             f'{getAndsetParams}'\
             f'\tpublic ResponseEntity<String> toResponseEntity() {{\n'\
             f'{toResponseEntity}'\
@@ -52,13 +49,11 @@ for callName in data:
             match (default_value):
                 case True:
                     default_value = 'true'
-                    break
                 case False:
                     default_value = 'false'
-                    break
                 case _:
                     raise ValueError(f'Boolean Type Requires True/False But Got {default_value = }')
-        if param_type == 'String':
+        elif param_type == 'String':
             default_value = repr(default_value).replace("\'", "\"")
         else:
             default_value = repr(default_value)

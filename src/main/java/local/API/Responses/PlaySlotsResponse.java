@@ -13,10 +13,6 @@ public class PlaySlotsResponse extends InternalResponse {
 
 	private double WINNINGS = -1;
 
-	public void PlaySlotsResponse() {
-		super();
-	}
-
 	public int get_PAYOUT_ID() {
 		return PAYOUT_ID;
 	}

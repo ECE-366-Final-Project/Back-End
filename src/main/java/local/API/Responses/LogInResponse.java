@@ -9,10 +9,6 @@ public class LogInResponse extends InternalResponse {
 
 	private String TOKEN = "N/A";
 
-	public void LogInResponse() {
-		super();
-	}
-
 	public String get_TOKEN() {
 		return TOKEN;
 	}

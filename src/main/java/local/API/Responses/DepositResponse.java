@@ -7,10 +7,6 @@ import local.API.Responses.InternalResponse;
 
 public class DepositResponse extends InternalResponse {
 
-	public void DepositResponse() {
-		super();
-	}
-
 	public ResponseEntity<String> toResponseEntity() {
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", this.get_MESSAGE());

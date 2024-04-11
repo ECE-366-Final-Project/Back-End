@@ -7,10 +7,6 @@ import local.API.Responses.InternalResponse;
 
 public class StatusResponse extends InternalResponse {
 
-	public void StatusResponse() {
-		super();
-	}
-
 	public ResponseEntity<String> toResponseEntity() {
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", this.get_MESSAGE());

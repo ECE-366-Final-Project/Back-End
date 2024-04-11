@@ -13,9 +13,7 @@ public class NewBlackjackResponse extends InternalResponse {
 
 	private String DEALERS_CARDS = "";
 
-	public void NewBlackjackResponse() {
-		super();
-	}
+	private boolean GAME_ENDED = false;
 
 	public int get_PLAYER_SCORE() {
 		return PLAYER_SCORE;
@@ -36,6 +34,13 @@ public class NewBlackjackResponse extends InternalResponse {
 	}
 	public void set_DEALERS_CARDS(String DEALERS_CARDS) {
 		this.DEALERS_CARDS = DEALERS_CARDS;
+	}
+
+	public boolean get_GAME_ENDED() {
+		return GAME_ENDED;
+	}
+	public void set_GAME_ENDED(boolean GAME_ENDED) {
+		this.GAME_ENDED = GAME_ENDED;
 	}
 
 	public ResponseEntity<String> toResponseEntity() {
