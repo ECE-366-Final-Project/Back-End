@@ -2,6 +2,8 @@ package local.API.Responses;
 
 import org.springframework.http.ResponseEntity;
 
+import org.json.JSONObject;
+
 // built-to-order response class
 // provides a basic response code, and an optional list to provide
 // necessary user-defined information
@@ -22,6 +24,10 @@ public abstract class InternalResponse {
 	public void set_Message(String MESSAGE) {
 		this.MESSAGE = MESSAGE;
 	}
+
+	public abstract JSONObject getJSON();
+
+	public abstract String toString();
 
 	public abstract ResponseEntity<String> toResponseEntity();
 }

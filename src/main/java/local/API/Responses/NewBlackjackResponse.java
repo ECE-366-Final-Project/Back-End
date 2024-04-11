@@ -3,6 +3,7 @@ package local.API.Responses;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.json.JSONObject;
+
 import local.API.Responses.InternalResponse;
 
 public class NewBlackjackResponse extends InternalResponse {
@@ -43,13 +44,21 @@ public class NewBlackjackResponse extends InternalResponse {
 		this.GAME_ENDED = GAME_ENDED;
 	}
 
-	public ResponseEntity<String> toResponseEntity() {
+	public JSONObject getJSON() {
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", this.get_MESSAGE());
 		jo.put("PLAYER_SCORE", this.get_PLAYER_SCORE());
 		jo.put("PLAYERS_CARDS", this.get_PLAYERS_CARDS());
 		jo.put("DEALERS_CARDS", this.get_DEALERS_CARDS());
 		jo.put("GAME_ENDED", this.get_GAME_ENDED());
-		return new ResponseEntity<String>(jo.toString(), HttpStatusCode.valueOf(this.get_RESPONSE_CODE()));
+		return jo;
+	}
+
+	public ResponseEntity<String> toResponseEntity() {
+		return new ResponseEntity<String>(this.toString(), HttpStatusCode.valueOf(this.get_RESPONSE_CODE()));
+	}
+
+	public String toString() {
+		return this.getJSON().toString();
 	}
 }

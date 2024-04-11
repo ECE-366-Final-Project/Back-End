@@ -3,6 +3,7 @@ package local.API.Responses;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.json.JSONObject;
+
 import local.API.Responses.InternalResponse;
 
 public class PlaySlotsResponse extends InternalResponse {
@@ -34,12 +35,20 @@ public class PlaySlotsResponse extends InternalResponse {
 		this.WINNINGS = WINNINGS;
 	}
 
-	public ResponseEntity<String> toResponseEntity() {
+	public JSONObject getJSON() {
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", this.get_MESSAGE());
 		jo.put("PAYOUT_ID", this.get_PAYOUT_ID());
 		jo.put("PAYOUT", this.get_PAYOUT());
 		jo.put("WINNINGS", this.get_WINNINGS());
-		return new ResponseEntity<String>(jo.toString(), HttpStatusCode.valueOf(this.get_RESPONSE_CODE()));
+		return jo;
+	}
+
+	public ResponseEntity<String> toResponseEntity() {
+		return new ResponseEntity<String>(this.toString(), HttpStatusCode.valueOf(this.get_RESPONSE_CODE()));
+	}
+
+	public String toString() {
+		return this.getJSON().toString();
 	}
 }
