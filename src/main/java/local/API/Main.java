@@ -586,7 +586,8 @@ public class Main {
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			rs.next();
-			if (!rs.getString(1).equals(passkey)) {
+			String key = rs.getObject(1) != null ? rs.getString(1) : null;
+			if (!key.equals(passkey)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
