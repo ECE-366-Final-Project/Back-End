@@ -662,6 +662,11 @@ public class Main {
 		double amount;
 		try {
 			amount = Double.parseDouble(depositAmount);
+			if (amount <= 0) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID AMOUNT");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+			}
 		} catch (Exception e) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID AMOUNT");
