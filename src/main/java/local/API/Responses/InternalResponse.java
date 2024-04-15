@@ -2,25 +2,32 @@ package local.API.Responses;
 
 import org.springframework.http.ResponseEntity;
 
+import org.json.JSONObject;
+
 // built-to-order response class
 // provides a basic response code, and an optional list to provide
 // necessary user-defined information
 public abstract class InternalResponse {
-	private final int responseCode;
-	private final String message;
 
-	// response data is RO, we shouldnt really be changing it	
-	public int getResponseCode(){
-		return responseCode;
+	private int RESPONSE_CODE = 503;
+	public int get_RESPONSE_CODE() {
+		return RESPONSE_CODE;
 	}
-	public String getMessage(){
-		return message;
+	public void set_RESPONSE_CODE(String responseCode) {
+		this.RESPONSE_CODE = RESPONSE_CODE;
+	}
+	
+	private String MESSAGE = "Service Unavailable";
+	public String get_MESSAGE() {
+		return MESSAGE;
+	}
+	public void set_Message(String MESSAGE) {
+		this.MESSAGE = MESSAGE;
 	}
 
-	public InternalResponse(int code, String m){
-		this.responseCode = code;
-		this.message = m;
-	}
+	public abstract JSONObject getJSON();
+
+	public abstract String toString();
 
 	public abstract ResponseEntity<String> toResponseEntity();
 }
