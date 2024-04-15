@@ -112,21 +112,33 @@ CreateUser = {
   'MESSAGE' : {
     'Type' : 'String', 
     'Default' : 'Service Unavailable'
-  }
+  },
 }
 
 Deposit = {
   'MESSAGE' : {
     'Type' : 'String', 
     'Default' : 'Service Unavailable'
-  }
+  },
 }
 
 Withdraw = {
   'MESSAGE' : {
     'Type' : 'String', 
     'Default' : 'Service Unavailable'
-  }
+  },
+}
+
+GetBal = {
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  },
+  'BALANCE' : {
+    'Type' : 'double',
+    'Default' : -1.0
+  },
+  
 }
 
 mappings = {
@@ -138,7 +150,8 @@ mappings = {
   'LogIn' : LogIn,
   'CreateUser' : CreateUser,
   'Deposit' : Deposit,
-  'Withdraw' : Withdraw
+  'Withdraw' : Withdraw,
+  'GetBal' : GetBal
 }
 
 with open('docs.json', 'w') as outfile:

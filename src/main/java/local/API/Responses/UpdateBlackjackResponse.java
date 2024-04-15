@@ -16,7 +16,7 @@ public class UpdateBlackjackResponse extends InternalResponse {
 
 	private int DEALER_SCORE = -1;
 
-	private double PAYOUT = -1;
+	private double PAYOUT = -1.0;
 
 	private boolean GAME_ENDED = false;
 
