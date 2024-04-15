@@ -585,8 +585,12 @@ public class Main {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			String key = rs.getObject(1) != null ? rs.getString(1) : null;
+			if (!rs.next()) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+			}
+			String key = rs.getString(1);
 			if (!key.equals(passkey)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
