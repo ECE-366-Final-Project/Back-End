@@ -590,7 +590,7 @@ public class Main {
 				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 			}
-			String key = rs.getObject(1);
+			String key = rs.getString(1);
 			if (!key.equals(passkey)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
