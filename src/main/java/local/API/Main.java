@@ -46,10 +46,10 @@ public class Main {
 
     Random rand = new Random();
 
-	String API_SESSION_SALT = String.valueOf(rand.nextInt(65535));
+	final String API_SESSION_SALT = String.valueOf(rand.nextInt()); // Random salt generated per session
 
 	public static void main(String[] args){
-		// Test connection to database. If its not active, fail loudly.
+		// Test connection to database. If its not active, fail loudly and exit program.
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
             String QUERY = "SELECT payout FROM public.\"slots_payouts\" LIMIT 1000;";
@@ -504,6 +504,64 @@ public class Main {
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
 		jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+	}
+
+	@GetMapping("/RejoinBlackjack")
+	public ResponseEntity<String> rejoinBlackjack(	@RequestParam(value = "token", defaultValue = "") String token) {
+		// 1. Is Valid Account
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
+		String username = cachedSessionTokens.get(token);
+
+		BlackjackGame game = activeGameLookup.get(username);
+		if (game == null) {
+			// check database
+			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
+			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
+			try {
+				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(QUERY_check);
+				rs.next();
+				if (rs.getInt(1) == 0) {
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "USER DOES NOT HAVE ANY ACTIVE GAMES");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
+				}
+				Statement stmt2 = conn.createStatement();
+				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
+				rs2.next();
+				game = new BlackjackGame(	username, 
+											Optional.of(rs.getString("deck")), 
+											Optional.of(rs.getString("player_hand")),
+											Optional.of(rs.getString("dealer_hand")),
+											rs.getDouble("bet"));
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		} else {
+			cachedBlackjackGames.remove(game);
+		}
+		activeGameLookup.remove(game.username);
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "BLACKJACK GAME RETRIEVED SUCCESSFULLY");
+		jo.put("PLAYER_SCORE", game.getScore(game.getPlayersCards()));
+		jo.put("DEALER_SCORE", game.getScore(game.getDealersCards().substring(0, 2)));
+		jo.put("PLAYERS_CARDS", game.getPlayersCards());
+		jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
+		activeGameLookup.put(game.username, game);
+		game.resetTimeToKill();
+		cachedBlackjackGames.add(game);
+		activeGameLookup.put(username, game);
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
