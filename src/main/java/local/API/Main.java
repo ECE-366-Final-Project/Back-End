@@ -1,6 +1,7 @@
 // GPL v3
 
 package local.API;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
 import local.API.BlackjackLinkedList;
+
+import local.API.Responses.*;
 
 import org.json.JSONObject;
 
@@ -582,8 +585,13 @@ public class Main {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
-			rs.next();
-			if (!rs.getString(1).equals(passkey)) {
+			if (!rs.next()) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+			}
+			String key = rs.getString(1);
+			if (!key.equals(passkey)) {
 				JSONObject jo = new JSONObject();
 				jo.put("MESSAGE", "INVALID USERNAME OR PASSWORD");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
@@ -693,6 +701,11 @@ public class Main {
 		double amount;
 		try {
 			amount = Double.parseDouble(withdrawAmount);
+			if (amount <= 0) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID AMOUNT");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+			}
 		} catch (Exception e) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID AMOUNT");
@@ -813,11 +826,39 @@ public class Main {
 		}
 	}
 
+	@GetMapping("/GetBal")
+	public ResponseEntity<String> getBal(@RequestParam(value = "token", defaultValue = "") String token) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+		String username = cachedSessionTokens.get(token);
+		double bet;
+		String QUERY = "SELECT balance FROM public.\"user\" WHERE username = \'"+username+"\';";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			rs.next();
+			Double bal = rs.getDouble(1);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			jo.put("BALANCE", bal);
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
 	// Roulette
 	
 	//@RequestMapping("/playRoulette")
 }
-
 // PARAM FORMATING 
 // $curl "localhost:<PORT>/Demo?<param1>=<value>&<param2>=<value>"
 // Example:

@@ -2,6 +2,9 @@
 ### Cooper Union, Spring 2024
 > #### Lani Wang, James Ryan, Evan Rosenfeld, Vaibhav Hariani
 
+## For CooperCasino Deployment:  
+See our [monorepo](https://github.com/ECE-366-Final-Project/monorepo) for instructions on how to deploy CooperCasino.  
+
 ## Cloning the Repo
 Clone the repo (with the recursive flag!) by running
 ```
