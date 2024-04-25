@@ -5,7 +5,9 @@ package local.API;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import local.Casino.Slots.Slots;
@@ -857,7 +859,11 @@ public class Main {
 
 	// Roulette
 	
-	//@RequestMapping("/playRoulette")
+//	@PostMapping("/PlayRoulette")
+	//public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
+	  //                                         @RequestBody(required = true) String body){ 
+//	}
+
 }
 // PARAM FORMATING 
 // $curl "localhost:<PORT>/Demo?<param1>=<value>&<param2>=<value>"
