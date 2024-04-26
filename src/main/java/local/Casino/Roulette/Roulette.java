@@ -25,60 +25,27 @@ public class Roulette {
 
 		try {
 			JSONObject jo = new JSONObject(rawBody);
-			// parse single
-			JSONObject jo_single = jo.getJSONObject("single");
-			// iterate through single bets
-			for (Iterator key=jo_single.keys(); key.hasNext(); ) {
-    			String betMade = (String) key.next();
-				float betAmt = jo_single.getFloat(betMade);
-				
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
-				System.out.println(bet.toString());
-				pairlist.add(bet);
-			}
+			// parse variable bets
+			String[] variableBets = {"single", "split", "horizontal", "vertical"};
+			for (String betType : variableBets){
+				JSONObject jo_betType = jo.getJSONObject(betType);
 
-			// parse split
-			JSONObject jo_split = jo.getJSONObject("split");
-			// iterate through split bets
-			for (Iterator key=jo_split.keys(); key.hasNext(); ) {
-    			String betMade = (String) key.next();
-				float betAmt = jo_split.getFloat(betMade);
-				
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
-				System.out.println(bet.toString());
-				pairlist.add(bet);
-			}
-			
-			// parse horizontal
-			JSONObject jo_horizontal = jo.getJSONObject("horizontal");
-			// iterate through horizontal bets
-			for (Iterator key=jo_horizontal.keys(); key.hasNext(); ) {
-    			String betMade = (String) key.next();
-				float betAmt = jo_horizontal.getFloat(betMade);
-				
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
-				System.out.println(bet.toString());
-				pairlist.add(bet);
-			}
-
-			// parse vertical
-			JSONObject jo_vertical = jo.getJSONObject("vertical");
-			// iterate through vertical bets
-			for (Iterator key=jo_vertical.keys(); key.hasNext(); ) {
-    			String betMade = (String) key.next();
-				float betAmt = jo_vertical.getFloat(betMade);
-				
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
-				System.out.println(bet.toString());
-				pairlist.add(bet);
+				for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
+					String betMade = (String) key.next();
+					float betAmt = jo_betType.getFloat(betMade);
+					
+					RouletteBetPair bet = new RouletteBetPair(betMade, betAmt, betType);
+					System.out.println(bet.toString());
+					pairlist.add(bet);
+				}
 			}
 
 			// parse lumped bets
-			String[] assortedBets = {"red", "black", "first_half", "second_half", "first_dozen", "second_dozen", "third_dozen"};
-			for(String betMade : assortedBets){
+			String[] lumpedBets = {"red", "black", "first_half", "second_half", "first_dozen", "second_dozen", "third_dozen"};
+			for(String betMade : lumpedBets){
 				float betAmt = jo.getFloat(betMade);
 
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt, "LUMP");
 				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}

@@ -1,15 +1,17 @@
 package local.Casino;
 
 public class RouletteBetPair {
-	public String betType;
+	public String betNum;
 	public Float betValue;
-	
-	public RouletteBetPair(String bT, float bV){
-		betType = bT;
+	public String betType;
+
+	public RouletteBetPair(String bN, float bV, String bT){
+		betNum = bN;
 		betValue = bV;
+		betType = bT;
 	}
 
 	public String toString(){
-		return betType + " " + betValue.toString() + "\n";
+		return betType + ": " + betNum + ", " + betValue.toString();
 	}
 }
