@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
 import local.API.BlackjackLinkedList;
+import local.Casino.Roulette;
 
 import local.API.Responses.*;
 
@@ -859,10 +860,15 @@ public class Main {
 
 	// Roulette
 	
-//	@PostMapping("/PlayRoulette")
-	//public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
-	  //                                         @RequestBody(required = true) String body){ 
-//	}
+	@PostMapping("/PlayRoulette")
+	public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
+	                                           @RequestBody(required = true) String body){ 
+		Roulette game = new Roulette(body);
+
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 
 }
 // PARAM FORMATING 

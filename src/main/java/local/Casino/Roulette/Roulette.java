@@ -21,7 +21,7 @@ public class Roulette {
 	
 	private LinkedList<RouletteBetPair> pairlist = new LinkedList<RouletteBetPair>();
 
-	public boolean rouletteLoadBody(String rawBody){
+	public boolean loadBody(String rawBody){
 
 		try {
 			JSONObject jo = new JSONObject(rawBody);
@@ -33,6 +33,7 @@ public class Roulette {
 				float betAmt = jo_single.getFloat(betMade);
 				
 				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 
@@ -44,6 +45,7 @@ public class Roulette {
 				float betAmt = jo_split.getFloat(betMade);
 				
 				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 			
@@ -55,6 +57,7 @@ public class Roulette {
 				float betAmt = jo_horizontal.getFloat(betMade);
 				
 				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 
@@ -66,6 +69,7 @@ public class Roulette {
 				float betAmt = jo_vertical.getFloat(betMade);
 				
 				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 
@@ -75,6 +79,7 @@ public class Roulette {
 				float betAmt = jo.getFloat(betMade);
 
 				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt);
+				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 		} catch(JSONException e) {
@@ -83,6 +88,10 @@ public class Roulette {
 			return false;
 		} 
 		return true;
+	}
+
+	public Roulette(String body){
+		loadBody(body);	
 	}
 
 	//order: greens, reds, blacks
