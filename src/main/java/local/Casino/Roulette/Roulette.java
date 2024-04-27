@@ -65,10 +65,12 @@ public class Roulette {
 		if(!loadBody(body)){
 			// catch an invalid json load
 			failedToGenerate = true;
-			return;
 		}
-
 		
+		// generate payouts based on input
+
+
+		return;
 	}
 
 	public boolean parseFailed(){
