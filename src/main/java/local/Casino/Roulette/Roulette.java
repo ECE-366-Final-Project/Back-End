@@ -71,7 +71,7 @@ public class Roulette {
 		
 	}
 
-	public parseFailed(){
+	public boolean parseFailed(){
 		return failedToGenerate;
 	}
 
