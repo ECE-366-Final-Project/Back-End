@@ -21,6 +21,10 @@ public class Roulette {
 	
 	private LinkedList<RouletteBetPair> pairlist = new LinkedList<RouletteBetPair>();
 
+	private Roll rolledNumber = Roll.spinWheel();
+
+	private boolean failedToGenerate = false;
+
 	public boolean loadBody(String rawBody){
 
 		try {
@@ -58,7 +62,17 @@ public class Roulette {
 	}
 
 	public Roulette(String body){
-		loadBody(body);	
+		if(!loadBody(body)){
+			// catch an invalid json load
+			failedToGenerate = true;
+			return;
+		}
+
+		
+	}
+
+	public parseFailed(){
+		return failedToGenerate;
 	}
 
 	//order: greens, reds, blacks

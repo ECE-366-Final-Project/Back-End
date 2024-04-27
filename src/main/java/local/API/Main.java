@@ -865,6 +865,15 @@ public class Main {
 	                                           @RequestBody(required = true) String body){ 
 		Roulette game = new Roulette(body);
 
+		if(game.parseFailed()){
+			return returnError();
+		}
+		
+		// how did we get here?
+		return returnError();
+	}
+
+	private ResponseEntity<String> returnError(){
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", "INTERNAL SERVER ERROR");
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
