@@ -38,11 +38,10 @@ public class Roulette {
 					String betMade = (String) key.next();
 					float betAmt = jo_betType.getFloat(betMade);
 				
+					String[] numbersBetOn = { betMade };
 					switch (betType){
 						case "split":
-							String[] numbersBetOn = str.split(".", 2);
-						default:
-							String[] numbersBetOn = {betMade};
+							numbersBetOn = betMade.split(".", 2);
 					}
 
 					RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, betType);
@@ -55,8 +54,9 @@ public class Roulette {
 			String[] lumpedBets = {"red", "black", "first_half", "second_half", "first_dozen", "second_dozen", "third_dozen"};
 			for(String betMade : lumpedBets){
 				float betAmt = jo.getFloat(betMade);
+				String[] numbersBetOn = { betMade };
 
-				RouletteBetPair bet = new RouletteBetPair(betMade, betAmt, "LUMP");
+				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, "LUMP");
 				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}

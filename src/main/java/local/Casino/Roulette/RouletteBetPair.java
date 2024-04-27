@@ -5,7 +5,7 @@ public class RouletteBetPair {
 	public Float betValue; // vbucks bet
 	public String betType; //single, LUMP, split, etc
 
-	public RouletteBetPair(String bN, float bV, String bT){
+	public RouletteBetPair(String[] bN, float bV, String bT){
 		betNum = bN;
 		betValue = bV;
 		betType = bT;
