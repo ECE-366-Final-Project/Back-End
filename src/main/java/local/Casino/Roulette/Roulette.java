@@ -41,7 +41,7 @@ public class Roulette {
 					String[] numbersBetOn = { betMade };
 					switch (betType){
 						case "split":
-							numbersBetOn = betMade.split(".");
+							numbersBetOn = betMade.split("[.]");
 					}
 
 					RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, betType);
