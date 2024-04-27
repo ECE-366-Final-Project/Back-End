@@ -37,8 +37,15 @@ public class Roulette {
 				for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
 					String betMade = (String) key.next();
 					float betAmt = jo_betType.getFloat(betMade);
-					
-					RouletteBetPair bet = new RouletteBetPair(betMade, betAmt, betType);
+				
+					switch (betType){
+						case "split":
+							String[] numbersBetOn = str.split(".", 2);
+						default:
+							String[] numbersBetOn = {betMade};
+					}
+
+					RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, betType);
 					System.out.println(bet.toString());
 					pairlist.add(bet);
 				}
