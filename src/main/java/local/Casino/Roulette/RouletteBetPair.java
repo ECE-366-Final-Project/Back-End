@@ -12,6 +12,11 @@ public class RouletteBetPair {
 	}
 
 	public String toString(){
-		return betType + ": " + betNum + ", " + betValue.toString();
+		switch (betType) {
+			case "split":
+				return betType + ": " + betNum[0] + " & " + betNum[1] + ", " + ", " + betValue.toString();
+			default:
+				return betType + ": " + betNum[0] + ", " + betValue.toString();
+		}
 	}
 }
