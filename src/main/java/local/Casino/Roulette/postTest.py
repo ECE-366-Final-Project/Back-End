@@ -1,14 +1,25 @@
 import json
 import requests
+def printResponse(response: requests.Response) -> None:
+    print(json.dumps(response.json(), indent=2), end='\n\n')
 
-url = "http://localhost:8081/PlayRoulette?token=1"
+urlLogin ="http://localhost:8081/LogIn?username=admin&passkey=170ffa3b63148dce14912b378ff5c1e8b1108bdb73841723a335a01ec91ac6a8"
+
 
 headers = {
     'Content-Type': 'application/json'
 }
 
-with open('RouletteRequestBAD.json') as f:
+with open('RouletteRequest.json') as f:
     d = f.read();
 print(d)
 
-response = requests.post(url, headers=headers, data=d)
+login: requests.Request = requests.get(urlLogin, headers=headers)
+printResponse(login)
+
+token: str = login.json()["TOKEN"]
+
+urlPlay = f'http://localhost:8081/PlayRoulette?token={token}'
+
+response: requests.Request = requests.post(urlPlay, headers=headers, data=d)
+printResponse(response)

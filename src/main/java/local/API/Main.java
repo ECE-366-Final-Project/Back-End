@@ -863,14 +863,26 @@ public class Main {
 	@PostMapping("/PlayRoulette")
 	public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
 	                                           @RequestBody(required = true) String body){ 
+		//verify user token
+		if (!isValidAccount(token)){
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
 		Roulette game = new Roulette(body);
 
 		if(game.parseFailed()){
-			return returnError();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET MADE");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		
-		// how did we get here?
-		return returnError();
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "ROULETTE FINISHED SUCCESSFULLY");
+		jo.put("WINNINGS", game.returnWinnings());
+		jo.put("ROLL", game.returnRoll());
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
 	private ResponseEntity<String> returnError(){

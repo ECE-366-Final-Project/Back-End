@@ -35,7 +35,38 @@ public class Roulette {
 
 	private boolean failedToGenerate = false;
 
-	public boolean loadBody(String rawBody){
+	private double totalPayout = -1.0;
+
+
+	public Roulette(String body){
+		if(!loadBody(body)){
+			// catch an invalid json load
+			failedToGenerate = true;
+			return;
+		}
+		generateRollStats();
+
+		totalPayout = 0.0;
+		// generate payouts based on input
+		for(RouletteBetPair pair : pairlist){
+			totalPayout += pair.getBetValue() * didBetWin(pair) * 
+				fetchMultiplier(pair);
+		}
+
+		System.out.println("Payout: " + totalPayout);
+
+		return;
+	}
+	
+	public double returnWinnings(){
+		return totalPayout;
+	}
+
+	public int returnRoll(){
+		return rolledNumber.toInt();
+	}
+
+	private boolean loadBody(String rawBody){
 		try {
 			JSONObject jo = new JSONObject(rawBody);
 			// parse variable bets
@@ -64,7 +95,7 @@ public class Roulette {
 
 			// parse lumped bets
 			for(String betMade : lumpedBets){
-				double betAmt = -1.0;
+				double betAmt = 0.0;
 				try {
 					betAmt = jo.getDouble(betMade);
 				} catch(JSONException e) {
@@ -84,26 +115,9 @@ public class Roulette {
 		return true;
 	}
 
-	public Roulette(String body){
-		if(!loadBody(body)){
-			// catch an invalid json load
-			failedToGenerate = true;
-			return;
-		}
-		generateRollStats();
-
-		double totalPayout = 0.0;
-		// generate payouts based on input
-		for(RouletteBetPair pair : pairlist){
-			totalPayout += pair.getBetValue() * didBetWin(pair) * 
-				fetchMultiplier(pair);
-		}
-
-		return;
-	}
-
 	// 	Generates a list of stats useful for checking if a lumped bet is valid
 	private void generateRollStats(){
+		System.out.println("PROCESSING BET: " + rolledNumber.toString());
 		for(String betType : lumpedBets){
 			switch (betType) {
 				case "red":
@@ -112,6 +126,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				case "black":
 					if(rolledNumber.rollColor() != 1){
@@ -119,6 +134,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;			
 				case "first_half":
 					if(rolledNumber.toInt() <= 18){
@@ -126,6 +142,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				case "second_half":					
 					if(rolledNumber.toInt() > 18){
@@ -133,6 +150,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				case "first_dozen":
 					if(rolledNumber.toInt() <= 12){
@@ -140,6 +158,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				case "second_dozen":
 					if(rolledNumber.toInt() >= 13 && rolledNumber.toInt() < 25){
@@ -147,6 +166,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				case "third_dozen":
 					if(rolledNumber.toInt() >= 25){
@@ -154,6 +174,7 @@ public class Roulette {
 					} else {
 						rolledStats.put(betType, 0);
 					}
+					System.out.println(betType + " " + rolledStats.get(betType).toString());
 					break;
 				default:
 					// erm... unimplemented!
