@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Iterator;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,48 +22,63 @@ public class Roulette {
 	
 	private LinkedList<RouletteBetPair> pairlist = new LinkedList<RouletteBetPair>();
 
-	private Roll rolledNumber = Roll.spinWheel();
+	// On class initialization, we get unique rolled number. 
+	// A map of stats are generated for the given Roll, whether it "wins"
+	// 	on a specified bet
+	private Roll rolledNumber = Roll.spinWheel(); 
+	private HashMap<String, Integer> rolledStats = new HashMap<String, Integer>();
+	private static final String[] variableBets = {"single", "split", "horizontal",
+	 												"vertical"};
+	private static final String[] lumpedBets = {"red", "black", "first_half", 
+												"second_half", "first_dozen",
+												"second_dozen", "third_dozen"};
 
 	private boolean failedToGenerate = false;
 
 	public boolean loadBody(String rawBody){
-
 		try {
 			JSONObject jo = new JSONObject(rawBody);
 			// parse variable bets
-			String[] variableBets = {"single", "split", "horizontal", "vertical"};
 			for (String betType : variableBets){
 				JSONObject jo_betType = jo.getJSONObject(betType);
+				try{
+					for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
+						String betMade = (String) key.next();
+						double betAmt = jo_betType.getDouble(betMade);
+					
+						String[] numbersBetOn = { betMade };
+						switch (betType){
+							case "split":
+								numbersBetOn = betMade.split("[.]");
+						}
 
-				for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
-					String betMade = (String) key.next();
-					float betAmt = jo_betType.getFloat(betMade);
-				
-					String[] numbersBetOn = { betMade };
-					switch (betType){
-						case "split":
-							numbersBetOn = betMade.split("[.]");
+						RouletteBetPair bet = new RouletteBetPair(numbersBetOn, 
+							betAmt, betType);
+						System.out.println(bet.toString());
+						pairlist.add(bet);
 					}
-
-					RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, betType);
-					System.out.println(bet.toString());
-					pairlist.add(bet);
+				} catch(JSONException e) {
+					continue;
 				}
 			}
 
 			// parse lumped bets
-			String[] lumpedBets = {"red", "black", "first_half", "second_half", "first_dozen", "second_dozen", "third_dozen"};
 			for(String betMade : lumpedBets){
-				float betAmt = jo.getFloat(betMade);
+				double betAmt = -1.0;
+				try {
+					betAmt = jo.getDouble(betMade);
+				} catch(JSONException e) {
+					continue;
+				}
 				String[] numbersBetOn = { betMade };
 
-				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, "LUMP");
+				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, 
+					"LUMP");
 				System.out.println(bet.toString());
 				pairlist.add(bet);
 			}
 		} catch(JSONException e) {
-			e.printStackTrace();
-			//return empty list
+			System.out.println("INVALID REQUEST: " + rawBody);
 			return false;
 		} 
 		return true;
@@ -72,12 +88,146 @@ public class Roulette {
 		if(!loadBody(body)){
 			// catch an invalid json load
 			failedToGenerate = true;
+			return;
 		}
-		
-		// generate payouts based on input
+		generateRollStats();
 
+		double totalPayout = 0.0;
+		// generate payouts based on input
+		for(RouletteBetPair pair : pairlist){
+			totalPayout += pair.getBetValue() * didBetWin(pair) * 
+				fetchMultiplier(pair);
+		}
 
 		return;
+	}
+
+	// 	Generates a list of stats useful for checking if a lumped bet is valid
+	private void generateRollStats(){
+		for(String betType : lumpedBets){
+			switch (betType) {
+				case "red":
+					if(rolledNumber.rollColor() == 1){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				case "black":
+					if(rolledNumber.rollColor() != 1){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;			
+				case "first_half":
+					if(rolledNumber.toInt() <= 18){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				case "second_half":					
+					if(rolledNumber.toInt() > 18){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				case "first_dozen":
+					if(rolledNumber.toInt() <= 12){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				case "second_dozen":
+					if(rolledNumber.toInt() >= 13 && rolledNumber.toInt() < 25){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				case "third_dozen":
+					if(rolledNumber.toInt() >= 25){
+						rolledStats.put(betType, 1);
+					} else {
+						rolledStats.put(betType, 0);
+					}
+					break;
+				default:
+					// erm... unimplemented!
+					break;
+			}
+		}
+	}
+
+	// 	0 - no win
+	// 	1 - win
+	private int didBetWin(RouletteBetPair pair){
+		// 	checks the pair's betType
+		// 	condition for variable bets: pair betNums must have at least
+		// 		one value which equals our rolled number.
+		if(!(pair.getBetType().equals("LUMP"))){
+			for(String betNum : pair.getBetNums()){
+				if(betNum.equals(rolledNumber.toString())){
+					return 1;
+				}
+			}
+			return 0;
+		}
+		//	we have a lumped bet. consult rollStats
+		return rolledStats.getOrDefault(pair.getBetType(), 0);
+	}
+
+	// TODO make this a private static final map
+	// TODO make a private static final String[] with every "allowed"
+	// 	bet. Make a map to check if its a "lump" bet or not.
+	// 		A lump bet is a bet which bets on a specific QUALITY (red, first
+	// 		dozen, etc) and NOT ON Specific numbers.
+	private double fetchMultiplier(RouletteBetPair pair){
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣮⣝⡯⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢼⣧⣿⣿⣿⡿⠻⠿⢿⣯⣿⣮⣀⡁⢑⡀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⡟⠁⠀⠙⠧⠞⠈⢓⣿⣿⣿⣿⢿⣾⣷⡀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣫⠟⠀⠀⠀⠀⠀⠀⠀⠀⡙⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠢⢈⢻⣿⣿⣿⣿⡇⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⣿⠁⠚⣛⣒⠀⠀⠀⡀⠐⢒⡒⠳⠤⢺⣟⣿⣿⡇⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠋⠀⠋⠚⠛⠃⢈⣩⣓⢮⠿⠯⠷⠀⠀⢽⣿⠏⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⠄⠀⠀⠀⠀⠀⠀⢸⠩⠀⠀⠀⠀⠀⠀⠀⢻⡤⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠔⡸⡎⠀⠀⠀⠀⠀⠀⠀⠀⠠⠁⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠀⠀⠀⠈⠀⡳⣿⠆⠄⠀⠀⠁⠀⠠⠀⠀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠘⠤⡔⢎⣵⣸⢯⠜⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣇⠀⣠⣆⣿⣿⣾⣹⣏⢳⣄⡀⠀⠀⠀⠃⠀⠀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⣸⠤⠋⠙⠓⠶⠖⣾⠾⠟⠋⢣⣲⣦⡾⠀⠀⠀⠀⠀⠀⠀⠀
+//		⠀⠀⠀⠀⢀⣤⣶⣶⣾⣽⣿⢷⠀⢈⠃⢙⠃⠀⠀⠀⢐⡾⣾⡿⠃⠀⠀⠠⣄⠀⠀⠀⠀
+//		⠀⢀⣤⣾⣿⣿⣿⣿⣿⣿⣯⣆⢣⣑⣄⠴⡇⣽⣦⣢⣾⣾⠋⡀⠐⠀⠁⢀⣿⣷⣄⠀⠀
+//		⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣗⣉⣛⣿⣶⣟⣿⣿⣛⣁⣐⣀⣀⣀⣠⣶⣿⣡⣨⣟⣑⣢
+		switch (pair.getBetType()) {
+			case "single":
+				return 37.0;
+			case "split":
+				return 18.0;
+			case "horizontal":
+				return 11.66666666667;
+			case "vertical":
+				return 2.166666666667;
+			case "red":
+				return 1.111111111111;
+			case "black":
+				return 1.111111111111;
+			case "first_half":
+				return 1.111111111111;
+			case "second_half":
+				return 1.111111111111;
+			case "first_dozen":
+				return 2.166666666667;
+			case "second_dozen":
+				return 2.166666666667;
+			case "third_dozen":
+				return 2.166666666667;
+			default:
+				return -1.0;
+		}
 	}
 
 	public boolean parseFailed(){
@@ -130,8 +280,7 @@ public class Roulette {
 			Collections.unmodifiableList(Arrays.asList(values()));	
 		private static final int SIZE = ROLL_OUTCOMES.size();
 		private static final Random RANDOM = new Random();
-
-
+	
 		// Grabs a random outcome, and returns that Roll.
 		public static Roll spinWheel() {
 			return ROLL_OUTCOMES.get(RANDOM.nextInt(SIZE));
@@ -143,6 +292,12 @@ public class Roulette {
 			return this.ordinal();
 		}
 		
+		// Returns Enum int as string.
+		// God left me today.
+		public String toString(){
+			return Integer.toString(this.toInt());
+		}
+
 		// rollColor
 		// determines color of rolled value, given number
 		// 0 - green
