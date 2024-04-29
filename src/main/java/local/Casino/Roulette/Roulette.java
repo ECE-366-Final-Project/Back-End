@@ -96,6 +96,10 @@ public class Roulette {
 						String betMade = (String) key.next();
 						double betAmt = jo_betType.getDouble(betMade);
 					
+						if(betAmt < 0.0){
+							return false;
+						}
+
 						String[] numbersBetOn = { betMade };
 						switch (betType){
 							case "split":
@@ -121,6 +125,11 @@ public class Roulette {
 				} catch(JSONException e) {
 					continue;
 				}
+				
+				if(betAmt < 0.0){
+					return false;
+				}
+
 				String[] numbersBetOn = { betMade };
 
 				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, 
