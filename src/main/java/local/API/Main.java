@@ -863,26 +863,63 @@ public class Main {
 	@PostMapping("/PlayRoulette")
 	public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
 	                                           @RequestBody(required = true) String body){ 
-		//verify user token
-		if (!isValidAccount(token)){
+		// 1. Is Valid Account
+		if (!isValidAccount(token)) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 
-		Roulette game = new Roulette(body);
+        String username = cachedSessionTokens.get(token);
 
+	
+		// 2. Generate Roulette Game
+		Roulette game = new Roulette(body);
+		Double bet = game.returnTotalBet();	
+		Double winnings = game.returnWinnings();
+		
+		// 3. Balance >= Bet
+		if (!isValidBet(username, bet.toString())) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID BET");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+
+		// 4. Check if game finished
 		if(game.parseFailed()){
 			JSONObject jo = new JSONObject();
-			jo.put("MESSAGE", "INVALID BET MADE");
+			jo.put("MESSAGE", "INVALID REQUEST");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		
-		JSONObject jo = new JSONObject();
-		jo.put("MESSAGE", "ROULETTE FINISHED SUCCESSFULLY");
-		jo.put("WINNINGS", game.returnWinnings());
-		jo.put("ROLL", game.returnRoll());
-		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		// 5. Update DB with relevant info!		
+		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", "+body+");";
+
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			ResponseEntity<String> withdrawResult = bet(token, bet.toString());
+			//double check these
+			if (withdrawResult.getStatusCode() != HttpStatus.OK) {
+				return withdrawResult;
+			}
+			ResponseEntity<String> depositResult = payout(token, Double.toString(winnings));
+			if (depositResult.getStatusCode() != HttpStatus.OK) {
+				return depositResult;
+			}
+			stmt.executeUpdate(QUERY_roulette);
+			conn.close();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "ROULETTE GAME SUCCESSFUL");
+			jo.put("WINNINGS", winnings);
+			jo.put("ROLLED_NUMBER", game.returnRoll());
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 	private ResponseEntity<String> returnError(){

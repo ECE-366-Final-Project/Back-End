@@ -17,8 +17,16 @@ import java.util.List;
 import org.json.JSONObject;
 import org.json.JSONException;
 
-public class Roulette {
+import java.sql.*;
+
 	
+
+public class Roulette {
+
+	private static final String DB = System.getenv("POSTGRES_DB");
+	private static final String DB_URL ="jdbc:postgresql://db:5432/"+DB;
+	private static final String USER = System.getenv("POSTGRES_USER");
+	private static final String PASS = System.getenv("POSTGRES_PASSWORD");
 	
 	private LinkedList<RouletteBetPair> pairlist = new LinkedList<RouletteBetPair>();
 
@@ -26,7 +34,10 @@ public class Roulette {
 	// A map of stats are generated for the given Roll, whether it "wins"
 	// 	on a specified bet
 	private Roll rolledNumber = Roll.spinWheel(); 
-	private HashMap<String, Integer> rolledStats = new HashMap<String, Integer>();
+	private HashMap<String, Integer> rolledStats = new HashMap<String, Integer>();	
+	//		A variable bet is a bet which depends on the SPECIFIC number you roll.
+	// 		A lump bet is a bet which bets on a specific QUALITY (red, first
+	// 		dozen, etc) and NOT ON Specific numbers.
 	private static final String[] variableBets = {"single", "split", "horizontal",
 	 												"vertical"};
 	private static final String[] lumpedBets = {"red", "black", "first_half", 
@@ -36,7 +47,7 @@ public class Roulette {
 	private boolean failedToGenerate = false;
 
 	private double totalPayout = -1.0;
-
+	private double totalBet = -1.0;
 
 	public Roulette(String body){
 		if(!loadBody(body)){
@@ -55,6 +66,9 @@ public class Roulette {
 
 		System.out.println("Payout: " + totalPayout);
 
+		// generate the DB info
+		
+
 		return;
 	}
 	
@@ -66,7 +80,12 @@ public class Roulette {
 		return rolledNumber.toInt();
 	}
 
+	public double returnTotalBet(){
+		return totalBet;
+	}
+
 	private boolean loadBody(String rawBody){
+		totalBet = 0.0;
 		try {
 			JSONObject jo = new JSONObject(rawBody);
 			// parse variable bets
@@ -87,6 +106,7 @@ public class Roulette {
 							betAmt, betType);
 						System.out.println(bet.toString());
 						pairlist.add(bet);
+						totalBet += betAmt;
 					}
 				} catch(JSONException e) {
 					continue;
@@ -107,6 +127,7 @@ public class Roulette {
 					"LUMP");
 				System.out.println(bet.toString());
 				pairlist.add(bet);
+				totalBet += betAmt;
 			}
 		} catch(JSONException e) {
 			System.out.println("INVALID REQUEST: " + rawBody);
@@ -185,27 +206,60 @@ public class Roulette {
 
 	// 	0 - no win
 	// 	1 - win
+	// BUG TODO: FIX HORIZONTAL AND VERTICAL BETS!!!
 	private int didBetWin(RouletteBetPair pair){
 		// 	checks the pair's betType
 		// 	condition for variable bets: pair betNums must have at least
 		// 		one value which equals our rolled number.
-		if(!(pair.getBetType().equals("LUMP"))){
-			for(String betNum : pair.getBetNums()){
-				if(betNum.equals(rolledNumber.toString())){
+		
+
+		switch (pair.getBetType()) {
+			case "LUMP":
+				return rolledStats.getOrDefault(pair.getBetType(), 0);
+			case "single":
+				if(pair.getBetNums()[0].equals(rolledNumber.toString())){
 					return 1;
 				}
-			}
+				return 0;
+			case "split":
+				for(String betNum : pair.getBetNums()){
+					if(betNum.equals(rolledNumber.toString())){
+						return 1;
+					}
+				}
+				return 0;
+			case "horizontal":
+				if(pair.getBetNums()[0].equals(horizontalIndex(rolledNumber.toString()))){
+					return 1;
+				}
+				return 0;
+			case "vertical":
+				if(pair.getBetNums()[0].equals(verticalIndex(rolledNumber.toString()))){
+					return 1;
+				}
+				return 0;
+			default:
+				return 0;
+		}
+	}
+
+	private int horizontalIndex(String betNum){
+		int bet = Integer.parseInt(betNum);
+		if(bet == 0 | bet == 37) {
 			return 0;
 		}
-		//	we have a lumped bet. consult rollStats
-		return rolledStats.getOrDefault(pair.getBetType(), 0);
+		return (bet / 3) + 1;
+	}
+
+	private int verticalIndex(String betNum){
+		int bet = Integer.parseInt(betNum);
+		if(bet == 0 | bet == 37) {
+			return 0;
+		}
+		return (bet / 12) + 1;
 	}
 
 	// TODO make this a private static final map
-	// TODO make a private static final String[] with every "allowed"
-	// 	bet. Make a map to check if its a "lump" bet or not.
-	// 		A lump bet is a bet which bets on a specific QUALITY (red, first
-	// 		dozen, etc) and NOT ON Specific numbers.
 	private double fetchMultiplier(RouletteBetPair pair){
 //		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣮⣝⡯⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀
 //		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢼⣧⣿⣿⣿⡿⠻⠿⢿⣯⣿⣮⣀⡁⢑⡀⠀⠀⠀⠀⠀
