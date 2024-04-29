@@ -893,7 +893,7 @@ public class Main {
 		}
 		
 		// 5. Update DB with relevant info!		
-		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", "+body+");";
+		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);

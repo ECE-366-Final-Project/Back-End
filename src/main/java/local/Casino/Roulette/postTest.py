@@ -19,6 +19,11 @@ printResponse(login)
 
 token: str = login.json()["TOKEN"]
 
+amount: float = 10_000_000.00
+urlDeposit = f'http://localhost:8081/Deposit?token={token}&amount={amount}'
+deposit: requests.Request = requests.get(urlDeposit, headers=headers)
+printResponse(deposit)
+
 urlPlay = f'http://localhost:8081/PlayRoulette?token={token}'
 
 response: requests.Request = requests.post(urlPlay, headers=headers, data=d)
