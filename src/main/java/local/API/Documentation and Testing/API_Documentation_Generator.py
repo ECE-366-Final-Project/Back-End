@@ -138,7 +138,21 @@ GetBal = {
     'Type' : 'double',
     'Default' : -1.0
   },
-  
+}
+
+PlayRoulette = {
+    'MESSAGE' : {
+        'Type' : 'String',
+        'Default' : 'Service Unavailable'
+    },
+    'ROLLED_NUMBER' : {
+        'Type' : 'int',
+        'Default' : 0
+    },
+    'WINNINGS' : {
+        'type' : 'double',
+        'Default' : -1.0
+    },
 }
 
 mappings = {
@@ -151,7 +165,8 @@ mappings = {
   'CreateUser' : CreateUser,
   'Deposit' : Deposit,
   'Withdraw' : Withdraw,
-  'GetBal' : GetBal
+  'GetBal' : GetBal,
+  'PlayRoulette' : PlayRoulette
 }
 
 with open('docs.json', 'w') as outfile:
