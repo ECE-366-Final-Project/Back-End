@@ -907,7 +907,7 @@ public class Main {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			JSONObject jo = new JSONObject();
-			
+
 			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
 			List<JSONObject> slots = new ArrayList<JSONObject>();
 			int count = 0;
@@ -925,7 +925,7 @@ public class Main {
 			while (rs.next()) {
 				count++;
 				JSONObject row = new JSONObject(rs.getString(1));
-				slots.add(row);
+				blackjack.add(row);
 			}
 			jo.put("Blackjack", blackjack.toArray());
 			jo.put("BlackjackCount", count);
@@ -936,7 +936,7 @@ public class Main {
 			while (rs.next()) {
 				count++;
 				JSONObject row = new JSONObject(rs.getString(1));
-				slots.add(row);
+				transactions.add(row);
 			}
 			jo.put("Transactions", transactions.toArray());
 			jo.put("TransactionCount", count);
