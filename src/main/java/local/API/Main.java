@@ -902,11 +902,12 @@ public class Main {
 		double bet;
 		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
 		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
-		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit 5) t;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			JSONObject jo = new JSONObject();
+			
 			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
 			List<JSONObject> slots = new ArrayList<JSONObject>();
 			int count = 0;
@@ -917,6 +918,7 @@ public class Main {
 			}
 			jo.put("Slots", slots.toArray());
 			jo.put("SlotsCount", count);
+
 			rs = stmt.executeQuery(QUERY_BLACKJACK);
 			List<JSONObject> blackjack = new ArrayList<JSONObject>();
 			count = 0;
@@ -927,6 +929,7 @@ public class Main {
 			}
 			jo.put("Blackjack", blackjack.toArray());
 			jo.put("BlackjackCount", count);
+
 			rs = stmt.executeQuery(QUERY_TRANSACTIONS);
 			List<JSONObject> transactions = new ArrayList<JSONObject>();
 			count = 0;
@@ -937,6 +940,7 @@ public class Main {
 			}
 			jo.put("Transactions", transactions.toArray());
 			jo.put("TransactionCount", count);
+
 			conn.close();
 			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
