@@ -423,6 +423,10 @@ public class Main {
 				}
 				break;
 			case "double_down":
+				if (game.getPlayersCards().length() > 4) {
+					jo.put("MESSAGE", "CANNOT DOUBLE DOWN");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
+				}
 				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet), true);
 				if (depositResult.getStatusCode() != HttpStatus.OK) {
 					return depositResult;
