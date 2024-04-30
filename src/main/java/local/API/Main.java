@@ -981,6 +981,19 @@ public class Main {
 		}
 	}
 
+	@GetMapping("/LogOut")
+	public ResponseEntity<String> logOut(@RequestParam(value = "token", defaultValue = "") String token) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+		cachedSessionTokens.remove(token);
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "LOGGED OUT SUCCESSFULLY");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+	}
+
 	// Roulette
 	
 	//@RequestMapping("/playRoulette")
