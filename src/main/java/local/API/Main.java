@@ -909,25 +909,34 @@ public class Main {
 			JSONObject jo = new JSONObject();
 			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
 			List<JSONObject> slots = new ArrayList<JSONObject>();
+			int count = 0;
 			while (rs.next()) {
+				count++;
 				JSONObject row = new JSONObject(rs.getString(1));
 				slots.add(row);
 			}
 			jo.put("Slots", slots.toArray());
+			jo.put("SlotsCount", count);
 			rs = stmt.executeQuery(QUERY_BLACKJACK);
 			List<JSONObject> blackjack = new ArrayList<JSONObject>();
+			count = 0;
 			while (rs.next()) {
+				count++;
 				JSONObject row = new JSONObject(rs.getString(1));
 				slots.add(row);
 			}
 			jo.put("Blackjack", blackjack.toArray());
+			jo.put("BlackjackCount", count);
 			rs = stmt.executeQuery(QUERY_TRANSACTIONS);
 			List<JSONObject> transactions = new ArrayList<JSONObject>();
+			count = 0;
 			while (rs.next()) {
+				count++;
 				JSONObject row = new JSONObject(rs.getString(1));
 				slots.add(row);
 			}
 			jo.put("Transactions", transactions.toArray());
+			jo.put("TransactionCount", count);
 			conn.close();
 			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
