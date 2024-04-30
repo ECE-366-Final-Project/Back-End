@@ -23,6 +23,8 @@ import org.springframework.http.HttpStatusCode;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
 import java.sql.* ;  // for standard JDBC programs
 
@@ -687,7 +689,7 @@ public class Main {
 		}
 
 		// we have a valid username.
-		String Q_ADDUSER = "INSERT INTO public.user(username, passkey, balance, created_at) VALUES (\'"+username+"\', \'"+passkey+"\', 0, NOW());";
+		String Q_ADDUSER = "INSERT INTO public.user(username, passkey) VALUES (\'"+username+"\', \'"+passkey+"\');";
 		try {
 			// add the username
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -885,6 +887,46 @@ public class Main {
 			e.printStackTrace();
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@GetMapping("GetGameHistory")
+	public ResponseEntity<String> getGameHistory(@RequestParam(value = "token", defaultValue = "") String token) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+		String username = cachedSessionTokens.get(token);
+		double bet;
+		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			JSONObject jo = new JSONObject();
+			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
+			List<JSONObject> slots = new ArrayList<JSONObject>();
+			while (rs.next()) {
+				JSONObject row = new JSONObject(rs.getString(1));
+				slots.add(row);
+			}
+			jo.put("Slots", slots.toArray());
+			rs = stmt.executeQuery(QUERY_BLACKJACK);
+			List<JSONObject> blackjack = new ArrayList<JSONObject>();
+			while (rs.next()) {
+				JSONObject row = new JSONObject(rs.getString(1));
+				slots.add(row);
+			}
+			jo.put("Blackjack", blackjack.toArray());
+			conn.close();
+			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
