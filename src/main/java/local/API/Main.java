@@ -891,7 +891,7 @@ public class Main {
 		}
 	}
 
-	@GetMapping("GetGameHistory")
+	@GetMapping("GetUserHistory")
 	public ResponseEntity<String> getGameHistory(@RequestParam(value = "token", defaultValue = "") String token) {
 		if (!isValidAccount(token)) {
 			JSONObject jo = new JSONObject();
@@ -900,6 +900,7 @@ public class Main {
 		}
 		String username = cachedSessionTokens.get(token);
 		double bet;
+		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
 		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
 		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
 		try {
@@ -920,6 +921,13 @@ public class Main {
 				slots.add(row);
 			}
 			jo.put("Blackjack", blackjack.toArray());
+			rs = stmt.executeQuery(QUERY_TRANSACTIONS);
+			List<JSONObject> transactions = new ArrayList<JSONObject>();
+			while (rs.next()) {
+				JSONObject row = new JSONObject(rs.getString(1));
+				slots.add(row);
+			}
+			jo.put("Transactions", transactions.toArray());
 			conn.close();
 			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
