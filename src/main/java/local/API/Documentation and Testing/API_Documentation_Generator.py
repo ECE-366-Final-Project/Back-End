@@ -138,7 +138,29 @@ GetBal = {
     'Type' : 'double',
     'Default' : -1.0
   },
-  
+}
+
+RejoinBlackjack = {
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  },
+  'PLAYER_SCORE' : {
+    'Type' : 'int', 
+    'Default' : -1
+  },
+  'DEALER_SCORE' : {
+    'Type' : 'int', 
+    'Default' : -1
+  },
+  'PLAYERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
+  'DEALERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
 }
 
 mappings = {
@@ -147,11 +169,12 @@ mappings = {
   'PlaySlots' : PlaySlots,
   'NewBlackjack' : NewBlackjack,
   'UpdateBlackjack' : UpdateBlackjack,
+  'RejoinBlackjack' : RejoinBlackjack,
   'LogIn' : LogIn,
   'CreateUser' : CreateUser,
   'Deposit' : Deposit,
   'Withdraw' : Withdraw,
-  'GetBal' : GetBal
+  'GetBal' : GetBal,
 }
 
 with open('docs.json', 'w') as outfile:

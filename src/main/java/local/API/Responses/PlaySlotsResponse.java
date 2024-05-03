@@ -10,9 +10,9 @@ public class PlaySlotsResponse extends InternalResponse {
 
 	private int PAYOUT_ID = -1;
 
-	private double PAYOUT = -1.0;
+	private double PAYOUT = -1;
 
-	private double WINNINGS = -1.0;
+	private double WINNINGS = -1;
 
 	public int get_PAYOUT_ID() {
 		return PAYOUT_ID;

@@ -8,7 +8,7 @@ import local.API.Responses.InternalResponse;
 
 public class GetBalResponse extends InternalResponse {
 
-	private double BALANCE = -1.0;
+	private double BALANCE = -1;
 
 	public double get_BALANCE() {
 		return BALANCE;
