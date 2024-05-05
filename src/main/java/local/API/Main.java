@@ -949,10 +949,11 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 		String username = cachedSessionTokens.get(token);
-		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
-		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
-		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit 5) t;";
-		// String QUERY_ROULETTE = "select row_to_json(t) from (select * from public.\"roulette\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		int numRows = 5;
+		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit "+numRows+") t;";
+		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
+		String QUERY_ROULETTE = "select row_to_json(t) from (select roulette_game_id, username, rolled_number, winnings, total_bet from public.\"roulette\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
