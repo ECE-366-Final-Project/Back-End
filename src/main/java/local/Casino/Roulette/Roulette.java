@@ -48,6 +48,7 @@ public class Roulette {
 
 	private double totalPayout = -1.0;
 	private double totalBet = -1.0;
+	
 
 	public Roulette(String body){
 		if(!loadBody(body)){
