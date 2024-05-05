@@ -14,10 +14,13 @@ import local.Casino.Slots.Slots;
 import local.API.BlackjackGame;
 import local.API.BlackjackLinkedList;
 import local.Casino.Roulette;
+import local.Casino.RouletteController;
+import local.Casino.Roulette.Roll;
 
 import local.API.Responses.*;
 
 import org.json.JSONObject;
+import org.json.JSONException;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -860,6 +863,8 @@ public class Main {
 
 	// Roulette
 	
+	RouletteController controller = new RouletteController();
+
 	@PostMapping("/PlayRoulette")
 	public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
 	                                           @RequestBody(required = true) String body){ 
@@ -874,10 +879,45 @@ public class Main {
 
 	
 		// 2. Generate Roulette Game
-		Roulette game = new Roulette(body);
+		Roulette game = null;
+		String id = "-1";
+		Roll rolledNumber = null;
+		try {
+			JSONObject jo_mp = new JSONObject(body);
+			if(jo_mp.getBoolean("isQueued") == true){
+				// generate multiplayer
+				id = controller.returnLobbyID(username);
+				if(id.equals("-1")) { 
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "CURRENTLY IN GAME.");
+					return new ResponseEntity<String>(jo.toString(), 
+						HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+				
+				while(rolledNumber != null){
+					rolledNumber = controller.returnRoll(id);
+				}
+
+				if(rolledNumber == null){
+					returnError();
+				}
+				game = new Roulette(body, rolledNumber);
+			} else {
+				// generate singleplayer
+				game = new Roulette(body);
+			}
+		} catch (JSONException e) {
+			// generate singleplayer
+			game = new Roulette(body);
+		}
+		
+		if(game == null){
+			game = new Roulette(body);
+		}
+
 		Double bet = game.returnTotalBet();	
 		Double winnings = game.returnWinnings();
-		
+	
 		// 3. Balance >= Bet
 		if (!isValidBet(username, bet.toString())) {
 			JSONObject jo = new JSONObject();
@@ -891,14 +931,15 @@ public class Main {
 			jo.put("MESSAGE", "INVALID REQUEST");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
-		
+
 		// 5. Update DB with relevant info!		
-		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
+		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json, lobby_id) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", \'"+body+"\', \'"+id+"\');";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
 			ResponseEntity<String> withdrawResult = bet(token, bet.toString());
+			
 			//double check these
 			if (withdrawResult.getStatusCode() != HttpStatus.OK) {
 				return withdrawResult;
@@ -909,15 +950,18 @@ public class Main {
 			}
 			stmt.executeUpdate(QUERY_roulette);
 			conn.close();
+			
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "ROULETTE GAME SUCCESSFUL");
 			jo.put("WINNINGS", winnings);
 			jo.put("ROLLED_NUMBER", game.returnRoll());
+
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

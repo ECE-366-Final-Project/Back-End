@@ -3,6 +3,7 @@
 package local.Casino;
 
 import local.Casino.RouletteBetPair;
+import local.Casino.RouletteController;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,21 +14,14 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.time.*;
 
 import org.json.JSONObject;
 import org.json.JSONException;
 
 import java.sql.*;
 
-	
-
 public class Roulette {
-
-	private static final String DB = System.getenv("POSTGRES_DB");
-	private static final String DB_URL ="jdbc:postgresql://db:5432/"+DB;
-	private static final String USER = System.getenv("POSTGRES_USER");
-	private static final String PASS = System.getenv("POSTGRES_PASSWORD");
-	
 	private LinkedList<RouletteBetPair> pairlist = new LinkedList<RouletteBetPair>();
 
 	// On class initialization, we get unique rolled number. 
@@ -38,17 +32,46 @@ public class Roulette {
 	//		A variable bet is a bet which depends on the SPECIFIC number you roll.
 	// 		A lump bet is a bet which bets on a specific QUALITY (red, first
 	// 		dozen, etc) and NOT ON Specific numbers.
+
 	private static final String[] variableBets = {"single", "split", "horizontal",
 	 												"vertical"};
 	private static final String[] lumpedBets = {"red", "black", "first_half", 
 												"second_half", "first_dozen",
 												"second_dozen", "third_dozen"};
 
+	
+
+	// multiplayer opts
+	private static final String lobbyTag = "isQueued";
+	private boolean attachToLobby = false;
+
 	private boolean failedToGenerate = false;
 
 	private double totalPayout = -1.0;
 	private double totalBet = -1.0;
 
+	public Roulette(String body, Roll r){
+		if(!loadBody(body)){
+			// catch an invalid json load
+			failedToGenerate = true;
+			return;
+		}
+		rolledNumber = r; 
+
+		generateRollStats();
+
+		totalPayout = 0.0;
+		// generate payouts based on input
+		for(RouletteBetPair pair : pairlist){
+			totalPayout += pair.getBetValue() * didBetWin(pair) * 
+				fetchMultiplier(pair);
+		}
+
+		System.out.println("Payout: " + totalPayout);
+
+		return;
+	}
+	
 	public Roulette(String body){
 		if(!loadBody(body)){
 			// catch an invalid json load
@@ -66,12 +89,10 @@ public class Roulette {
 
 		System.out.println("Payout: " + totalPayout);
 
-		// generate the DB info
-		
-
 		return;
 	}
-	
+
+
 	public double returnWinnings(){
 		return totalPayout;
 	}
@@ -84,10 +105,114 @@ public class Roulette {
 		return totalBet;
 	}
 
+	public boolean returnLobbyStatus(){
+		return attachToLobby;
+	}
+
+	public boolean parseFailed(){
+		return failedToGenerate;
+	}
+	
+	//order: greens, reds, blacks
+	public enum Roll {
+		// this order MUST remain the same.
+		ZERO,
+		ONE,
+		TWO,
+		THREE,
+		FOUR,
+		FIVE,
+		SIX,
+		SEVEN,
+		EIGHT,
+		NINE,
+		TEN,
+		ELEVEN,
+		TWELVE,
+		THIRTEEN,
+		FOURTEEN,
+		FIFTEEN,
+		SIXTEEN,
+		SEVENTEEN,
+		EIGHTEEN,
+		NINETEEN,
+		TWENTY,
+		TWENTYONE,
+		TWENTYTWO,
+		TWENTYTHREE,
+		TWENTYFOUR,
+		TWENTYFIVE,
+		TWENTYSIX,
+		TWENTYSEVEN,
+		TWENTYEIGHT,
+		TWENTYNINE,
+		THIRTY,
+		THIRTYONE,
+		THIRTYTWO,
+		THIRTYTHREE,
+		THIRTYFOUR,
+		THIRTYFIVE,
+		THIRTYSIX,
+		DOUBLEZERO;
+		
+		private static final List<Roll> ROLL_OUTCOMES = 
+			Collections.unmodifiableList(Arrays.asList(values()));	
+		private static final int SIZE = ROLL_OUTCOMES.size();
+		private static final Random RANDOM = new Random();
+	
+		// Grabs a random outcome, and returns that Roll.
+		public static Roll spinWheel() {
+			return ROLL_OUTCOMES.get(RANDOM.nextInt(SIZE));
+		}
+
+		public static Roll spinWheel(int fixed) { 
+			return ROLL_OUTCOMES.get(fixed);
+		}
+
+		// Returns the int associated with each enum.
+		// Relies on the order in which each enum object is declared!!
+		public int toInt() {
+			return this.ordinal();
+		}
+		
+		// Returns Enum int as string.
+		// God left me today.
+		public String toString(){
+			return Integer.toString(this.toInt());
+		}
+
+		// rollColor
+		// determines color of rolled value, given number
+		// 0 - green
+		// 1 - red
+		// 2 - black
+		public int rollColor() {
+			String isRed = "^[13579]$|^[1][24689]$|^[2][1357]$|^[3][0246]$";
+			
+			// is it green?
+			if(this == Roll.ZERO | this == Roll.DOUBLEZERO) {
+				return 0;
+			}
+
+			// is it red?
+			if(Integer.toString(this.toInt()).matches(isRed)) {
+				return 1;
+			}
+			
+			// its black.
+			return 2;
+		}
+
+	}
+
 	private boolean loadBody(String rawBody){
 		totalBet = 0.0;
 		try {
 			JSONObject jo = new JSONObject(rawBody);
+
+			// generate multiplayer-relevant info, if lobbyTag: true
+			generateLobby(jo);
+			
 			// parse variable bets
 			for (String betType : variableBets){
 				JSONObject jo_betType = jo.getJSONObject(betType);
@@ -141,8 +266,23 @@ public class Roulette {
 		} catch(JSONException e) {
 			System.out.println("INVALID REQUEST: " + rawBody);
 			return false;
-		} 
+		}
+
 		return true;
+	}
+
+	private void generateLobby(JSONObject jo) {
+		try { 
+			if(jo.getBoolean(lobbyTag)) {
+				// lobby info provided.
+				System.out.println("we have a lobby!");
+				attachToLobby = true;
+			} 
+		} catch (JSONException e) {
+			// no lobby info was provided.
+		}
+
+		return;
 	}
 
 	// 	Generates a list of stats useful for checking if a lumped bet is valid
@@ -268,7 +408,6 @@ public class Roulette {
 		return (bet / 12) + 1;
 	}
 
-	// TODO make this a private static final map
 	private double fetchMultiplier(RouletteBetPair pair){
 //		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣮⣝⡯⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀
 //		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢼⣧⣿⣿⣿⡿⠻⠿⢿⣯⣿⣮⣀⡁⢑⡀⠀⠀⠀⠀⠀
@@ -312,97 +451,5 @@ public class Roulette {
 			default:
 				return -1.0;
 		}
-	}
-
-	public boolean parseFailed(){
-		return failedToGenerate;
-	}
-
-	//order: greens, reds, blacks
-	public enum Roll {
-		// this order MUST remain the same.
-		ZERO,
-		ONE,
-		TWO,
-		THREE,
-		FOUR,
-		FIVE,
-		SIX,
-		SEVEN,
-		EIGHT,
-		NINE,
-		TEN,
-		ELEVEN,
-		TWELVE,
-		THIRTEEN,
-		FOURTEEN,
-		FIFTEEN,
-		SIXTEEN,
-		SEVENTEEN,
-		EIGHTEEN,
-		NINETEEN,
-		TWENTY,
-		TWENTYONE,
-		TWENTYTWO,
-		TWENTYTHREE,
-		TWENTYFOUR,
-		TWENTYFIVE,
-		TWENTYSIX,
-		TWENTYSEVEN,
-		TWENTYEIGHT,
-		TWENTYNINE,
-		THIRTY,
-		THIRTYONE,
-		THIRTYTWO,
-		THIRTYTHREE,
-		THIRTYFOUR,
-		THIRTYFIVE,
-		THIRTYSIX,
-		DOUBLEZERO;
-		
-		private static final List<Roll> ROLL_OUTCOMES = 
-			Collections.unmodifiableList(Arrays.asList(values()));	
-		private static final int SIZE = ROLL_OUTCOMES.size();
-		private static final Random RANDOM = new Random();
-	
-		// Grabs a random outcome, and returns that Roll.
-		public static Roll spinWheel() {
-			return ROLL_OUTCOMES.get(RANDOM.nextInt(SIZE));
-		}
-
-		// Returns the int associated with each enum.
-		// Relies on the order in which each enum object is declared!!
-		public int toInt() {
-			return this.ordinal();
-		}
-		
-		// Returns Enum int as string.
-		// God left me today.
-		public String toString(){
-			return Integer.toString(this.toInt());
-		}
-
-		// rollColor
-		// determines color of rolled value, given number
-		// 0 - green
-		// 1 - red
-		// 2 - black
-		public int rollColor() {
-			String isRed = "^[13579]$|^[1][24689]$|^[2][1357]$|^[3][0246]$";
-			
-			// is it green?
-			if(this == Roll.ZERO | this == Roll.DOUBLEZERO) {
-				return 0;
-			}
-
-			// is it red?
-			if(Integer.toString(this.toInt()).matches(isRed)) {
-				return 1;
-			}
-			
-			// its black.
-			return 2;
-		}
-
 	}
 }
