@@ -53,8 +53,12 @@ public class Roulette {
 		if(!loadBody(body)){
 			// catch an invalid json load
 			failedToGenerate = true;
-			return;
 		}
+		
+		return;
+	}
+	
+	public void runGame(){
 		generateRollStats();
 
 		totalPayout = 0.0;
@@ -66,12 +70,9 @@ public class Roulette {
 
 		System.out.println("Payout: " + totalPayout);
 
-		// generate the DB info
-		
-
 		return;
 	}
-	
+
 	public double returnWinnings(){
 		return totalPayout;
 	}

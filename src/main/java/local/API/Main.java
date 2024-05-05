@@ -876,14 +876,15 @@ public class Main {
 		// 2. Generate Roulette Game
 		Roulette game = new Roulette(body);
 		Double bet = game.returnTotalBet();	
-		Double winnings = game.returnWinnings();
 		
-		// 3. Balance >= Bet
+		// 3. Balance >= Bet, or bet invalid
 		if (!isValidBet(username, bet.toString())) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID BET");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
+
+		game.runGame();
 
 		// 4. Check if game finished
 		if(game.parseFailed()){
@@ -892,8 +893,10 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 		
+		Double winnings = game.returnWinnings();
+		
 		// 5. Update DB with relevant info!		
-		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
+		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, bet, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+bet+", "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
