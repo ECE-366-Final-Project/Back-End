@@ -16,7 +16,7 @@ headers = {
     'Content-Type': 'application/json'
 }
 
-with open('RouletteRequestNegativeBetLump.json') as f:
+with open('RouletteRequest.json') as f:
     d = f.read();
 print(d)
 

@@ -49,6 +49,7 @@ public class Roulette {
 
 	private double totalPayout = -1.0;
 	private double totalBet = -1.0;
+	
 
 	public Roulette(String body, Roll r){
 		if(!loadBody(body)){
@@ -76,8 +77,12 @@ public class Roulette {
 		if(!loadBody(body)){
 			// catch an invalid json load
 			failedToGenerate = true;
-			return;
 		}
+		
+		return;
+	}
+	
+	public void runGame(){
 		generateRollStats();
 
 		totalPayout = 0.0;
@@ -91,7 +96,6 @@ public class Roulette {
 
 		return;
 	}
-
 
 	public double returnWinnings(){
 		return totalPayout;
