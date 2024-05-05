@@ -156,9 +156,6 @@ public class Main {
 			rs.next();
 			Double bal = rs.getDouble(1);
 			conn.close();
-			if (bal == null) {
-				return false;
-			}
 			return (bal >= bet);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -952,10 +949,10 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 		String username = cachedSessionTokens.get(token);
-		double bet;
 		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
 		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
 		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		// String QUERY_ROULETTE = "select row_to_json(t) from (select * from public.\"roulette\" where username = \'"+username+"\' order by time desc limit 5) t;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -993,6 +990,17 @@ public class Main {
 			}
 			jo.put("Transactions", transactions.toArray());
 			jo.put("TransactionCount", count);
+
+			// rs = stmt.executeQuery(QUERY_ROULETTE);
+			// List<JSONObject> roulette = new ArrayList<JSONObject>();
+			// count = 0;
+			// while (rs.next()) {
+			// 	count++;
+			// 	JSONObject row = new JSONObject(rs.getString(1));
+			// 	roulette.add(row);
+			// }
+			// jo.put("Roulette", roulette.toArray());
+			// jo.put("RouletteCount", count);
 
 			conn.close();
 			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
