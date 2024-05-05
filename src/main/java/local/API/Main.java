@@ -100,7 +100,7 @@ public class Main {
 		}
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-            String QUERY = "SELECT username, bet, blackjack_game_id FROM public.\"blackjack\" WHERE active = true;";
+            String QUERY = "SELECT blackjack_game_id FROM public.\"blackjack\" WHERE active = true LIMIT 1;";
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery(QUERY);
 			if (rs.next()) {
