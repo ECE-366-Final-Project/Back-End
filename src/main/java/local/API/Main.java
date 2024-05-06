@@ -21,6 +21,7 @@ import local.API.Responses.*;
 
 import org.json.JSONObject;
 import org.json.JSONException;
+import org.json.JSONArray;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @RestController
@@ -884,10 +886,19 @@ public class Main {
 		Roulette game = new Roulette(body);
 		String id = "-1";
 		Roll rolledNumber = null;
+		String ttl = "-1";
+		String[] gameInfo = null;
+
+		// 3. Check if game finished
+		if(game.parseFailed()){
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID REQUEST");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+		}
 
 		Double bet = game.returnTotalBet();	
 		
-		// 3. Balance >= Bet, or bet invalid
+		// 4. Balance >= Bet, or bet invalid
 		if (!isValidBet(username, bet.toString())) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID BET");
@@ -899,18 +910,21 @@ public class Main {
 			JSONObject jo_mp = new JSONObject(body);
 			if(jo_mp.getBoolean("isQueued") == true){
 				// generate multiplayer
-				id = controller.returnLobbyID(username);
-				if(id.equals("-1") || usernameCache.contains(username)) { 
+				gameInfo = controller.returnLobbyID();
+				if(gameInfo == null)  { 
 					JSONObject jo = new JSONObject();
 					jo.put("MESSAGE", "CURRENTLY IN GAME.");
 					return new ResponseEntity<String>(jo.toString(), 
 						HttpStatus.INTERNAL_SERVER_ERROR);
-				} else {
-					usernameCache.add(username);
 				}
-				
-				while(rolledNumber != null){
-					rolledNumber = controller.returnRoll(id);
+				id = gameInfo[0];
+				ttl = gameInfo[1];
+
+				rolledNumber = controller.returnRoll(id);
+				if(rolledNumber == null){
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "GAME UNAVAILABLE");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 				}
 			}
 		} catch (JSONException e) {
@@ -918,19 +932,11 @@ public class Main {
 		}
 
 		game.runGame(rolledNumber);
-		usernameCache.remove(username);
-
-		// 4. Check if game finished
-		if(game.parseFailed()){
-			JSONObject jo = new JSONObject();
-			jo.put("MESSAGE", "INVALID REQUEST");
-			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
-		}
-	
+		
 		Double winnings = game.returnWinnings();
 
 		// 5. Update DB with relevant info!		
-		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, bet, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+bet+", "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
+		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, bet, rolled_number, winnings, bet_json, lobby_id, ttl) VALUES (\'"+username+"\', "+bet+", "+game.returnRoll()+", "+winnings+", \'"+body+"\', \'"+id+"\', \'"+ttl+"\');";
 
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -950,9 +956,18 @@ public class Main {
 			
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "ROULETTE GAME SUCCESSFUL");
-			jo.put("WINNINGS", winnings);
-			jo.put("ROLLED_NUMBER", game.returnRoll());
-
+			if(!id.equals("-1")){
+				jo.put("WINNINGS", "-1");
+			} else{
+				jo.put("WINNINGS", winnings);
+			}
+			if(!id.equals("-1")){
+				jo.put("ROLLED_NUMBER", "-1");
+			} else{
+				jo.put("ROLLED_NUMBER", game.returnRoll());
+			}
+			jo.put("LOBBY", id);
+			jo.put("TTL", ttl);
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -963,12 +978,71 @@ public class Main {
 		}
 	}
 
+	@GetMapping("/GetRouletteLobby")
+	public ResponseEntity<String> getRouletteLobby(@RequestParam(value = "token", defaultValue = "") String token,
+                                           @RequestParam(value = "lobby_id", defaultValue = "-1") String lobbyId){ 
+		if(lobbyId.equals("-1")){
+			returnError();
+		}
+
+        String username = cachedSessionTokens.get(token);
+		usernameCache.remove(username);
+		
+		// 5. Update DB with relevant info!		
+		String QUERY_roulette = "SELECT username, rolled_number, bet, winnings FROM public.\"roulette\" WHERE lobby_id = \'"+lobbyId+"\';";
+
+		JSONObject array = new JSONObject();
+		JSONObject user = new JSONObject();
+		String roll = "-1";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			
+			Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+			ResultSet rs = stmt.executeQuery(QUERY_roulette);
+
+			String bet = null;
+			String winnings = null;
+
+			JSONObject arrayObj = new JSONObject();
+			// compile json filled with usernames
+			for(rs.first(); rs.next(); ){
+				String uname = rs.getString(1);
+				String ubet = rs.getString(3);
+				String uwin = rs.getString(4);
+				roll = rs.getString(2);
+
+				if(uname.equals(username)){
+					bet = ubet;
+					winnings = uwin;
+				}
+
+				arrayObj.put(uname, bet);
+
+				System.out.println(uname + " " + ubet + " " + roll);
+			}
+			array.put("lobby_info", arrayObj);
+			conn.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR: DATABASE ERROR");
+			
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "ROULETTE GAME SUCCESSFUL");
+		jo.put("ROLLED_NUMBER", roll);
+		jo.put("PLAYERS", array);
+
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+	}
 	private ResponseEntity<String> returnError(){
 		JSONObject jo = new JSONObject();
 		jo.put("MESSAGE", "INTERNAL SERVER ERROR");
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 	}
-
 }
 // PARAM FORMATING 
 // $curl "localhost:<PORT>/Demo?<param1>=<value>&<param2>=<value>"
