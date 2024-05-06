@@ -16,7 +16,8 @@ headers = {
     'Content-Type': 'application/json'
 }
 
-with open('RouletteRequest.json') as f:
+#with open('RouletteRequest.json') as f:
+with open('RouletteRequestMultiplayer.json') as f:
     d = f.read();
 print(d)
 

@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatusCode;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.LinkedList;
+import java.util.Vector;
 import java.util.Random;
 import java.sql.* ;  // for standard JDBC programs
 
@@ -863,7 +864,8 @@ public class Main {
 
 	// Roulette
 	
-	RouletteController controller = new RouletteController();
+	public static RouletteController controller = new RouletteController();
+	public static Vector<String> usernameCache = new Vector<String>();
 
 	@PostMapping("/PlayRoulette")
 	public ResponseEntity<String> playRoulette(@RequestParam(value = "token", defaultValue = "") String token,
@@ -879,41 +881,9 @@ public class Main {
 
 	
 		// 2. Generate Roulette Game
-		Roulette game = null;
+		Roulette game = new Roulette(body);
 		String id = "-1";
 		Roll rolledNumber = null;
-		try {
-			JSONObject jo_mp = new JSONObject(body);
-			if(jo_mp.getBoolean("isQueued") == true){
-				// generate multiplayer
-				id = controller.returnLobbyID(username);
-				if(id.equals("-1")) { 
-					JSONObject jo = new JSONObject();
-					jo.put("MESSAGE", "CURRENTLY IN GAME.");
-					return new ResponseEntity<String>(jo.toString(), 
-						HttpStatus.INTERNAL_SERVER_ERROR);
-				}
-				
-				while(rolledNumber != null){
-					rolledNumber = controller.returnRoll(id);
-				}
-
-				if(rolledNumber == null){
-					returnError();
-				}
-				game = new Roulette(body, rolledNumber);
-			} else {
-				// generate singleplayer
-				game = new Roulette(body);
-			}
-		} catch (JSONException e) {
-			// generate singleplayer
-			game = new Roulette(body);
-		}
-		
-		if(game == null){
-			game = new Roulette(body);
-		}
 
 		Double bet = game.returnTotalBet();	
 		
@@ -923,8 +893,32 @@ public class Main {
 			jo.put("MESSAGE", "INVALID BET");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
+		
+		// Generate multiplayer game
+		try {
+			JSONObject jo_mp = new JSONObject(body);
+			if(jo_mp.getBoolean("isQueued") == true){
+				// generate multiplayer
+				id = controller.returnLobbyID(username);
+				if(id.equals("-1") || usernameCache.contains(username)) { 
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "CURRENTLY IN GAME.");
+					return new ResponseEntity<String>(jo.toString(), 
+						HttpStatus.INTERNAL_SERVER_ERROR);
+				} else {
+					usernameCache.add(username);
+				}
+				
+				while(rolledNumber != null){
+					rolledNumber = controller.returnRoll(id);
+				}
+			}
+		} catch (JSONException e) {
+			// generate singleplayer
+		}
 
-		game.runGame();
+		game.runGame(rolledNumber);
+		usernameCache.remove(username);
 
 		// 4. Check if game finished
 		if(game.parseFailed()){

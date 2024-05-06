@@ -51,35 +51,12 @@ public class Roulette {
 	private double totalBet = -1.0;
 	
 
-	public Roulette(String body, Roll r){
+	public Roulette(String body){
 		if(!loadBody(body)){
 			// catch an invalid json load
 			failedToGenerate = true;
 			return;
 		}
-		rolledNumber = r; 
-
-		generateRollStats();
-
-		totalPayout = 0.0;
-		// generate payouts based on input
-		for(RouletteBetPair pair : pairlist){
-			totalPayout += pair.getBetValue() * didBetWin(pair) * 
-				fetchMultiplier(pair);
-		}
-
-		System.out.println("Payout: " + totalPayout);
-
-		return;
-	}
-	
-	public Roulette(String body){
-		if(!loadBody(body)){
-			// catch an invalid json load
-			failedToGenerate = true;
-		}
-		
-		return;
 	}
 	
 	public void runGame(){
@@ -95,6 +72,14 @@ public class Roulette {
 		System.out.println("Payout: " + totalPayout);
 
 		return;
+	}
+
+	public void runGame(Roll rn){
+		if(rn != null){
+			// overwrite the roll generated at instantiation
+			rolledNumber = rn;
+		}
+		runGame();
 	}
 
 	public double returnWinnings(){
@@ -182,6 +167,7 @@ public class Roulette {
 		// Returns Enum int as string.
 		// God left me today.
 		public String toString(){
+			if (this == null) return "-1";
 			return Integer.toString(this.toInt());
 		}
 
@@ -249,7 +235,6 @@ public class Roulette {
 			// parse lumped bets
 			for(String betMade : lumpedBets){
 				double betAmt = 0.0;
-				bm = betMade;
 				try {
 					betAmt = jo.getDouble(betMade);
 				} catch(JSONException e) {
