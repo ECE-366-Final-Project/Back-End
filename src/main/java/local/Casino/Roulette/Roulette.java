@@ -219,8 +219,8 @@ public class Roulette {
 			
 			// parse variable bets
 			for (String betType : variableBets){
-				JSONObject jo_betType = jo.getJSONObject(betType);
 				try{
+					JSONObject jo_betType = jo.getJSONObject(betType);
 					for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
 						String betMade = (String) key.next();
 						double betAmt = jo_betType.getDouble(betMade);
@@ -249,6 +249,7 @@ public class Roulette {
 			// parse lumped bets
 			for(String betMade : lumpedBets){
 				double betAmt = 0.0;
+				bm = betMade;
 				try {
 					betAmt = jo.getDouble(betMade);
 				} catch(JSONException e) {
