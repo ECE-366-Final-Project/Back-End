@@ -88,7 +88,6 @@ public class Roulette {
 
 	private boolean loadBody(String rawBody){
 		totalBet = 0.0;
-		String bm = "";
 		try {
 			JSONObject jo = new JSONObject(rawBody);
 			// parse variable bets
@@ -97,7 +96,6 @@ public class Roulette {
 					JSONObject jo_betType = jo.getJSONObject(betType);
 					for (Iterator key=jo_betType.keys(); key.hasNext(); ) {
 						String betMade = (String) key.next();
-						bm = betMade;
 						double betAmt = jo_betType.getDouble(betMade);
 					
 						if(betAmt < 0.0){
@@ -144,7 +142,7 @@ public class Roulette {
 				totalBet += betAmt;
 			}
 		} catch(JSONException e) {
-			System.out.println("INVALID REQUEST: " + rawBody + bm);
+			System.out.println("INVALID REQUEST: " + rawBody);
 			return false;
 		} 
 		return true;
