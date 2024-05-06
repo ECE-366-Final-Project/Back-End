@@ -944,6 +944,62 @@ public class Main {
 		}
 	}
 
+	@GetMapping("GetLeaderboard")
+	public ResponseEntity<String> getLeaderboard() {
+		int numRows = 10;
+		String QUERY_SLOTS = "select row_to_json(t) from (select username, bet, winnings from public.\"slots\" where winnings != 0 order by winnings desc limit "+numRows+") t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select username, bet, winnings from public.\"blackjack\" where winnings != 0 and winnings != NULL and active = false order by winnings desc limit "+numRows+") t;";
+		String QUERY_ROULETTE = "select row_to_json(t) from (select username, bet, winnings from public.\"roulette\" where winnings != 0 order by winnings desc limit "+numRows+") t;";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			JSONObject jo = new JSONObject();
+
+			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
+			List<JSONObject> slots = new ArrayList<JSONObject>();
+			int count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				slots.add(row);
+			}
+			jo.put("Slots", slots.toArray());
+			jo.put("SlotsCount", count);
+
+			rs = stmt.executeQuery(QUERY_BLACKJACK);
+			List<JSONObject> blackjack = new ArrayList<JSONObject>();
+			count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				blackjack.add(row);
+			}
+			jo.put("Blackjack", blackjack.toArray());
+			jo.put("BlackjackCount", count);
+
+			rs = stmt.executeQuery(QUERY_ROULETTE);
+			List<JSONObject> roulette = new ArrayList<JSONObject>();
+			count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				roulette.add(row);
+			}
+			jo.put("Roulette", roulette.toArray());
+			jo.put("RouletteCount", count);
+
+			conn.close();
+			jo.put("MESSAGE", "LEADERBOARD RETRIEVED SUCCESSFULLY");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+
 	@GetMapping("GetUserHistory")
 	public ResponseEntity<String> getGameHistory(@RequestParam(value = "token", defaultValue = "") String token) {
 		if (!isValidAccount(token)) {
