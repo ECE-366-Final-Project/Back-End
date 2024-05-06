@@ -26,6 +26,8 @@ import org.springframework.http.HttpStatusCode;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
 import java.sql.* ;  // for standard JDBC programs
 
@@ -49,10 +51,10 @@ public class Main {
 
     Random rand = new Random();
 
-	String API_SESSION_SALT = String.valueOf(rand.nextInt(65535));
+	final String API_SESSION_SALT = String.valueOf(rand.nextInt()); // Random salt generated per session
 
 	public static void main(String[] args){
-		// Test connection to database. If its not active, fail loudly.
+		// Test connection to database. If its not active, fail loudly and exit program.
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
             String QUERY = "SELECT payout FROM public.\"slots_payouts\" LIMIT 1000;";
@@ -424,6 +426,10 @@ public class Main {
 				}
 				break;
 			case "double_down":
+				if (game.getPlayersCards().length() > 4) {
+					jo.put("MESSAGE", "CANNOT DOUBLE DOWN");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
+				}
 				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet), true);
 				if (depositResult.getStatusCode() != HttpStatus.OK) {
 					return depositResult;
@@ -507,6 +513,64 @@ public class Main {
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
 		jo.put("MESSAGE", "BLACKJACK GAME UPDATE SUCCESSFULLY");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+	}
+
+	@GetMapping("/RejoinBlackjack")
+	public ResponseEntity<String> rejoinBlackjack(	@RequestParam(value = "token", defaultValue = "") String token) {
+		// 1. Is Valid Account
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+
+		String username = cachedSessionTokens.get(token);
+
+		BlackjackGame game = activeGameLookup.get(username);
+		if (game == null) {
+			// check database
+			String QUERY_check = "SELECT Count(*) FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
+			String QUERY_get = "SELECT * FROM public.\"active_blackjack_games\" WHERE username = \'"+username+"\';";
+			try {
+				Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(QUERY_check);
+				rs.next();
+				if (rs.getInt(1) == 0) {
+					JSONObject jo = new JSONObject();
+					jo.put("MESSAGE", "USER DOES NOT HAVE ANY ACTIVE GAMES");
+					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
+				}
+				Statement stmt2 = conn.createStatement();
+				ResultSet rs2 = stmt2.executeQuery(QUERY_get);
+				rs2.next();
+				game = new BlackjackGame(	username, 
+											Optional.of(rs.getString("deck")), 
+											Optional.of(rs.getString("player_hand")),
+											Optional.of(rs.getString("dealer_hand")),
+											rs.getDouble("bet"));
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		} else {
+			cachedBlackjackGames.remove(game);
+		}
+		activeGameLookup.remove(game.username);
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "BLACKJACK GAME RETRIEVED SUCCESSFULLY");
+		jo.put("PLAYER_SCORE", game.getScore(game.getPlayersCards()));
+		jo.put("DEALER_SCORE", game.getScore(game.getDealersCards().substring(0, 2)));
+		jo.put("PLAYERS_CARDS", game.getPlayersCards());
+		jo.put("DEALERS_CARDS", game.getDealersCards().substring(0, 2));
+		activeGameLookup.put(game.username, game);
+		game.resetTimeToKill();
+		cachedBlackjackGames.add(game);
+		activeGameLookup.put(username, game);
 		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
@@ -632,7 +696,7 @@ public class Main {
 		}
 
 		// we have a valid username.
-		String Q_ADDUSER = "INSERT INTO public.user(username, passkey, balance, created_at) VALUES (\'"+username+"\', \'"+passkey+"\', 0, NOW());";
+		String Q_ADDUSER = "INSERT INTO public.user(username, passkey) VALUES (\'"+username+"\', \'"+passkey+"\');";
 		try {
 			// add the username
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -665,6 +729,11 @@ public class Main {
 		double amount;
 		try {
 			amount = Double.parseDouble(depositAmount);
+			if (amount <= 0) {
+				JSONObject jo = new JSONObject();
+				jo.put("MESSAGE", "INVALID AMOUNT");
+				return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
+			}
 		} catch (Exception e) {
 			JSONObject jo = new JSONObject();
 			jo.put("MESSAGE", "INVALID AMOUNT");
@@ -829,6 +898,67 @@ public class Main {
 		}
 	}
 
+	@GetMapping("GetUserHistory")
+	public ResponseEntity<String> getGameHistory(@RequestParam(value = "token", defaultValue = "") String token) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+		String username = cachedSessionTokens.get(token);
+		double bet;
+		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
+		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			Statement stmt = conn.createStatement();
+			JSONObject jo = new JSONObject();
+
+			ResultSet rs = stmt.executeQuery(QUERY_SLOTS);
+			List<JSONObject> slots = new ArrayList<JSONObject>();
+			int count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				slots.add(row);
+			}
+			jo.put("Slots", slots.toArray());
+			jo.put("SlotsCount", count);
+
+			rs = stmt.executeQuery(QUERY_BLACKJACK);
+			List<JSONObject> blackjack = new ArrayList<JSONObject>();
+			count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				blackjack.add(row);
+			}
+			jo.put("Blackjack", blackjack.toArray());
+			jo.put("BlackjackCount", count);
+
+			rs = stmt.executeQuery(QUERY_TRANSACTIONS);
+			List<JSONObject> transactions = new ArrayList<JSONObject>();
+			count = 0;
+			while (rs.next()) {
+				count++;
+				JSONObject row = new JSONObject(rs.getString(1));
+				transactions.add(row);
+			}
+			jo.put("Transactions", transactions.toArray());
+			jo.put("TransactionCount", count);
+
+			conn.close();
+			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INTERNAL SERVER ERROR");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
 	@GetMapping("/GetBal")
 	public ResponseEntity<String> getBal(@RequestParam(value = "token", defaultValue = "") String token) {
 		if (!isValidAccount(token)) {
@@ -856,6 +986,19 @@ public class Main {
 			jo.put("MESSAGE", "INTERNAL SERVER ERROR");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	@GetMapping("/LogOut")
+	public ResponseEntity<String> logOut(@RequestParam(value = "token", defaultValue = "") String token) {
+		if (!isValidAccount(token)) {
+			JSONObject jo = new JSONObject();
+			jo.put("MESSAGE", "INVALID SESSION, TRY LOGGING IN");
+			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
+		}
+		cachedSessionTokens.remove(token);
+		JSONObject jo = new JSONObject();
+		jo.put("MESSAGE", "LOGGED OUT SUCCESSFULLY");
+		return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 	}
 
 	// Roulette

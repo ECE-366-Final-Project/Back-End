@@ -155,12 +155,36 @@ PlayRoulette = {
     },
 }
 
+RejoinBlackjack = {
+  'MESSAGE' : {
+    'Type' : 'String', 
+    'Default' : 'Service Unavailable'
+  },
+  'PLAYER_SCORE' : {
+    'Type' : 'int', 
+    'Default' : -1
+  },
+  'DEALER_SCORE' : {
+    'Type' : 'int', 
+    'Default' : -1
+  },
+  'PLAYERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
+  'DEALERS_CARDS' : {
+    'Type' : 'String', 
+    'Default' : ''
+  },
+}
+
 mappings = {
   'Status' : Status,
   'Ping' : Ping,
   'PlaySlots' : PlaySlots,
   'NewBlackjack' : NewBlackjack,
   'UpdateBlackjack' : UpdateBlackjack,
+  'RejoinBlackjack' : RejoinBlackjack,
   'LogIn' : LogIn,
   'CreateUser' : CreateUser,
   'Deposit' : Deposit,
