@@ -70,8 +70,49 @@ public class Main {
 			System.exit(1);
 		}
 
+		try {
+			initBlackjack();
+		} catch (Exception e) {
+			System.exit(1);
+		}
+
 		// Start Spring with the args passed to our program on first-run.
 		SpringApplication.run(Main.class, args);
+	}
+
+	private static void initBlackjack() throws Exception {
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+            String QUERY = "SELECT username, bet, blackjack_game_id FROM public.\"blackjack\" WHERE active = true;";
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+            while (rs.next()) {
+				double bet = rs.getDouble("bet");
+				String username = rs.getString("username");
+				int blackjack_game_id = rs.getInt("blackjack_game_id");
+                String QUERY_RESOLVE_BALANCE = "UPDATE public.\"user\" SET balance = balance + "+bet+" WHERE username = \'"+username+"\';";
+				String QUERY_RESOLVE_HISTORY = "INSERT INTO public.\"transaction_history\" (username, transaction_type, amount) VALUES (\'"+username+"\', 'REFUND', "+bet+");";
+				String QUERY_RESOLVE_GAME = "UPDATE public.\"blackjack\" SET active = false WHERE blackjack_game_id = \'"+blackjack_game_id+"\';";
+				stmt.executeUpdate(QUERY_RESOLVE_BALANCE);
+				stmt.executeUpdate(QUERY_RESOLVE_HISTORY);
+				stmt.executeUpdate(QUERY_RESOLVE_GAME);
+            }
+			conn.close();
+		} catch (SQLException e) {
+			throw new Exception("FAILED TO RESOLVE OPEN BLACKJACK GAMES");
+		}
+		try {
+			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+            String QUERY = "SELECT blackjack_game_id FROM public.\"blackjack\" WHERE active = true LIMIT 1;";
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(QUERY);
+			if (rs.next()) {
+				throw new Exception("FAILED TO RESOLVE OPEN BLACKJACK GAMES");
+			}
+			conn.close();
+		} catch (SQLException e) {
+			throw new Exception("FAILED TO RESOLVE OPEN BLACKJACK GAMES");
+		}
 	}
 
 	// Specify an API path to make the request to
@@ -118,9 +159,6 @@ public class Main {
 			rs.next();
 			Double bal = rs.getDouble(1);
 			conn.close();
-			if (bal == null) {
-				return false;
-			}
 			return (bal >= bet);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -427,11 +465,17 @@ public class Main {
 				break;
 			case "double_down":
 				if (game.getPlayersCards().length() > 4) {
+					game.resetTimeToKill();
+					cachedBlackjackGames.add(game);
+					activeGameLookup.put(username, game);
 					jo.put("MESSAGE", "CANNOT DOUBLE DOWN");
 					return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 				}
 				ResponseEntity<String> depositResult = bet(token, Double.toString(game.bet), true);
 				if (depositResult.getStatusCode() != HttpStatus.OK) {
+					game.resetTimeToKill();
+					cachedBlackjackGames.add(game);
+					activeGameLookup.put(username, game);
 					return depositResult;
 				}
 				game.bet *= 2;
@@ -485,6 +529,9 @@ public class Main {
 				}
 				break;
 			default:
+				game.resetTimeToKill();
+				cachedBlackjackGames.add(game);
+				activeGameLookup.put(username, game);
 				jo.put("MESSAGE", "INVALID ACTION");
 				return new ResponseEntity<String>(jo.toString(), HttpStatus.PRECONDITION_FAILED);
 		}
@@ -508,7 +555,6 @@ public class Main {
 			}
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.OK);
 		}
-		activeGameLookup.put(game.username, game);
 		game.resetTimeToKill();
 		cachedBlackjackGames.add(game);
 		activeGameLookup.put(username, game);
@@ -906,10 +952,11 @@ public class Main {
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNAUTHORIZED);
 		}
 		String username = cachedSessionTokens.get(token);
-		double bet;
-		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit 5) t;";
-		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit 5) t;";
-		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit 5) t;";
+		int numRows = 5;
+		String QUERY_TRANSACTIONS = "select row_to_json(t) from (select * from public.\"transaction_history\" where username = \'"+username+"\' and (transaction_type = \'DEPOSIT\' or transaction_type = \'WITHDRAWAL\') order by time desc limit "+numRows+") t;";
+		String QUERY_SLOTS = "select row_to_json(t) from (select * from public.\"slots\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select * from public.\"blackjack\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
+		String QUERY_ROULETTE = "select row_to_json(t) from (select roulette_game_id, username, rolled_number, winnings, total_bet, time from public.\"roulette\" where username = \'"+username+"\' order by time desc limit "+numRows+") t;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
@@ -947,6 +994,17 @@ public class Main {
 			}
 			jo.put("Transactions", transactions.toArray());
 			jo.put("TransactionCount", count);
+
+			// rs = stmt.executeQuery(QUERY_ROULETTE);
+			// List<JSONObject> roulette = new ArrayList<JSONObject>();
+			// count = 0;
+			// while (rs.next()) {
+			// 	count++;
+			// 	JSONObject row = new JSONObject(rs.getString(1));
+			// 	roulette.add(row);
+			// }
+			// jo.put("Roulette", roulette.toArray());
+			// jo.put("RouletteCount", count);
 
 			conn.close();
 			jo.put("MESSAGE", "GAME HISTORY RETRIEVED SUCCESSFULLY");
