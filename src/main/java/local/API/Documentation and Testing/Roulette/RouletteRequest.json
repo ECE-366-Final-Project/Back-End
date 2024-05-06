@@ -1,0 +1,20 @@
+{
+  "single": {
+    "1": "0",
+	"23": "20"
+  },
+  "horizontal": {
+    "8": "30"
+  },
+  "vertical": {
+  	"2": "2"
+  },
+  "red": "100",
+  "black": "40",
+  "first_half": "0",
+  "second_half": "0",
+  "first_dozen": "0",
+  "second_dozen": "0",
+  "third_dozen": "0"
+}
+
