@@ -892,9 +892,9 @@ public class Main {
 			jo.put("MESSAGE", "INVALID REQUEST");
 			return new ResponseEntity<String>(jo.toString(), HttpStatus.UNPROCESSABLE_ENTITY);
 		}
-		
+	
 		Double winnings = game.returnWinnings();
-		
+
 		// 5. Update DB with relevant info!		
 		String QUERY_roulette = "INSERT INTO public.\"roulette\"(username, bet, rolled_number, winnings, bet_json) VALUES (\'"+username+"\', "+bet+", "+game.returnRoll()+", "+winnings+", \'"+body+"\');";
 

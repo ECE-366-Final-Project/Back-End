@@ -65,8 +65,8 @@ public class Roulette {
 		totalPayout = 0.0;
 		// generate payouts based on input
 		for(RouletteBetPair pair : pairlist){
-			totalPayout += pair.getBetValue() * didBetWin(pair) * 
-				fetchMultiplier(pair.getBetType());
+			System.out.println(pair.getBetType() +" "+ didBetWin(pair)+" "+ fetchMultiplier(pair));
+			totalPayout += pair.getBetValue() * didBetWin(pair) * fetchMultiplier(pair);
 		}
 
 		System.out.println("Payout: " + totalPayout);
@@ -134,8 +134,7 @@ public class Roulette {
 
 				String[] numbersBetOn = { betMade };
 
-				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, 
-					"LUMP");
+				RouletteBetPair bet = new RouletteBetPair(numbersBetOn, betAmt, "LUMP");
 				System.out.println(bet.toString());
 				pairlist.add(bet);
 				totalBet += betAmt;
@@ -226,7 +225,7 @@ public class Roulette {
 
 		switch (pair.getBetType()) {
 			case "LUMP":
-				return rolledStats.getOrDefault(pair.getBetType(), 0);
+				return rolledStats.getOrDefault(pair.getBetNums()[0], 0);
 			case "single":
 				if(pair.getBetNums()[0].equals(rolledNumber.toString())){
 					return 1;
@@ -288,6 +287,8 @@ public class Roulette {
 //		⠀⠀⠀⠀⢀⣤⣶⣶⣾⣽⣿⢷⠀⢈⠃⢙⠃⠀⠀⠀⢐⡾⣾⡿⠃⠀⠀⠠⣄⠀⠀⠀⠀
 //		⠀⢀⣤⣾⣿⣿⣿⣿⣿⣿⣯⣆⢣⣑⣄⠴⡇⣽⣦⣢⣾⣾⠋⡀⠐⠀⠁⢀⣿⣷⣄⠀⠀
 //		⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣗⣉⣛⣿⣶⣟⣿⣿⣛⣁⣐⣀⣀⣀⣠⣶⣿⣡⣨⣟⣑⣢
+//		hello everybody my name is
+//		markiplier
 		switch (pair.getBetType()) {
 			case "single":
 				return 37.0;
@@ -297,22 +298,27 @@ public class Roulette {
 				return 11.66666666667;
 			case "vertical":
 				return 2.166666666667;
-			case "red":
-				return 1.111111111111;
-			case "black":
-				return 1.111111111111;
-			case "first_half":
-				return 1.111111111111;
-			case "second_half":
-				return 1.111111111111;
-			case "first_dozen":
-				return 2.166666666667;
-			case "second_dozen":
-				return 2.166666666667;
-			case "third_dozen":
-				return 2.166666666667;
+			case "LUMP":
+				switch (pair.getBetNums()[0]) {
+					case "red":
+						return 1.111111111111;
+					case "black":
+						return 1.111111111111;
+					case "first_half":
+						return 1.111111111111;
+					case "second_half":
+						return 1.111111111111;
+					case "first_dozen":
+						return 2.166666666667;
+					case "second_dozen":
+						return 2.166666666667;
+					case "third_dozen":
+						return 2.166666666667;
+					default:
+						return 0.0;
+				}
 			default:
-				return -1.0;
+				return 0.0;
 		}
 	}
 
