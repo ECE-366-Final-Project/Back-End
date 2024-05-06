@@ -66,7 +66,7 @@ public class Roulette {
 		// generate payouts based on input
 		for(RouletteBetPair pair : pairlist){
 			totalPayout += pair.getBetValue() * didBetWin(pair) * 
-				fetchMultiplier(pair);
+				fetchMultiplier(pair.getBetType());
 		}
 
 		System.out.println("Payout: " + totalPayout);
@@ -122,7 +122,6 @@ public class Roulette {
 			// parse lumped bets
 			for(String betMade : lumpedBets){
 				double betAmt = 0.0;
-				bm = betMade;
 				try {
 					betAmt = jo.getDouble(betMade);
 				} catch(JSONException e) {
