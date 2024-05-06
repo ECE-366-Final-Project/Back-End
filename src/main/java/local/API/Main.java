@@ -947,9 +947,9 @@ public class Main {
 	@GetMapping("GetLeaderboard")
 	public ResponseEntity<String> getLeaderboard() {
 		int numRows = 10;
-		String QUERY_SLOTS = "select row_to_json(t) from (select username, bet, winnings from public.\"slots\" where winnings != 0 order by winnings desc limit "+numRows+") t;";
-		String QUERY_BLACKJACK = "select row_to_json(t) from (select username, bet, winnings from public.\"blackjack\" where winnings != 0 and winnings != NULL and active = false order by winnings desc limit "+numRows+") t;";
-		String QUERY_ROULETTE = "select row_to_json(t) from (select username, bet, winnings from public.\"roulette\" where winnings != 0 order by winnings desc limit "+numRows+") t;";
+		String QUERY_SLOTS = "select row_to_json(t) from (select username, bet, winnings from public.\"slots\" where winnings > bet order by winnings desc limit "+numRows+") t;";
+		String QUERY_BLACKJACK = "select row_to_json(t) from (select username, bet, winnings from public.\"blackjack\" where winnings != NULL and winnings > bet and active = false order by winnings desc limit "+numRows+") t;";
+		String QUERY_ROULETTE = "select row_to_json(t) from (select username, bet, winnings from public.\"roulette\" where winnings > bet order by winnings desc limit "+numRows+") t;";
 		try {
 			Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			Statement stmt = conn.createStatement();
